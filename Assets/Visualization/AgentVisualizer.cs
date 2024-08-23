@@ -7,20 +7,20 @@ public class AgentVisualizer : MonoBehaviour
     private Agent m_agent;
     public Agent Agent { get => m_agent; set => SetAgent(value); }
 
-    private Cached<UnityGame> cached_ManualGame = new(Cached<UnityGame>.GetOption.Parent);
-    private UnityGame ManualGame => cached_ManualGame[this];
+    private Cached<UnityGame> cached_UnityGame = new(Cached<UnityGame>.GetOption.Parent);
+    private UnityGame UnityGame => cached_UnityGame[this];
 
     private Cached<MeshRenderer> cached_MeshRenderer;
     private MeshRenderer MeshRenderer => cached_MeshRenderer[this];
 
     void Start()
     {
-        ManualGame.GameTick += OnTick;
+        UnityGame.GameTick += OnTick;
     }
 
     void OnDestroy()
     {
-        ManualGame.GameTick -= OnTick;
+        UnityGame.GameTick -= OnTick;
     }
     void OnTick()
     {
