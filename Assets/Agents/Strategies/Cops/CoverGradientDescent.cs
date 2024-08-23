@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 public class CoverGradientDescent : ITeamStrategy
 {
@@ -26,7 +25,7 @@ public class CoverGradientDescent : ITeamStrategy
         {
             var targetNode = TargetAssignment[cop].OccupiedNode;
             var copNodes = game.Cops.agents.Where(c => c != cop).Select(c => c.OccupiedNode).ToList();
-            
+
             var bestMove = cop.OccupiedNode;
             copNodes.Insert(0, cop.OccupiedNode);
             var score = game.graph.CalculateTargetCover(targetNode, copNodes).Count; //baseline - don't move to an inferior node            

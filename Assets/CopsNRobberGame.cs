@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 
 public class CopsNRobberGame
@@ -33,11 +34,11 @@ public class CopsNRobberGame
 
     public void InitStrategies()
     {
-        foreach (var strategy in strategies.Values) strategy.Init();
+        foreach (var team in teams) strategies.GetValueOrDefault(team)?.Init();
     }
 
     public void TickStrategies()
     {
-        foreach (var strategy in strategies.Values) strategy.Tick();
+        foreach (var team in teams) strategies.GetValueOrDefault(team)?.Tick();
     }
 }

@@ -7,8 +7,8 @@ public class AgentVisualizer : MonoBehaviour
     private Agent m_agent;
     public Agent Agent { get => m_agent; set => SetAgent(value); }
 
-    private Cached<ManualGame> cached_ManualGame = new(Cached<ManualGame>.GetOption.Parent);
-    private ManualGame ManualGame => cached_ManualGame[this];
+    private Cached<UnityGame> cached_ManualGame = new(Cached<UnityGame>.GetOption.Parent);
+    private UnityGame ManualGame => cached_ManualGame[this];
 
     private Cached<MeshRenderer> cached_MeshRenderer;
     private MeshRenderer MeshRenderer => cached_MeshRenderer[this];

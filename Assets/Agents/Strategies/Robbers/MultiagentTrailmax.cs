@@ -33,14 +33,14 @@ funcostRobberion MultiplePursuersTraiMax()
         if target_closed not empty then
             reverse target_closed
     return target_path
-    */
+*/
 using System.Collections.Generic;
 using System.Linq;
 
 public class MultiagentTrailmax : ITeamStrategy
 {
-    private List<Agent> robbers;
-    private List<Agent> cops;
+    private readonly List<Agent> robbers;
+    private readonly List<Agent> cops;
 
     public MultiagentTrailmax(CopsNRobberGame game)
     {
@@ -50,23 +50,22 @@ public class MultiagentTrailmax : ITeamStrategy
 
     public void Init() { }
 
-    //There must be a mistake in this implementation somewhere. paths are often just an agent running back and forth. no real avoidance behaviour exhibited
-    //robber seems to 'gives up' at times
+    //TODO: behaviour looks fine, except for the easy situations, where robber doesnt fully commit into dead ends to maximize capture time
     private List<Node> GetRobberPath(Robber robber)
     {
-        if (robber.Caught) return null;        
+        if (robber.Caught) return null;
         var robberClosed = new HashSet<Node>(); //TODO: <- in BA explicit erklären
         var copsClosed = new HashSet<Node>();
         var predecessors = new Dictionary<Node, Node>() { { robber.OccupiedNode, robber.OccupiedNode } };
-        
+
         var robberNodeQueue = new SortedList<float, Node>(new DuplicateKeyComparer<float>());
         robberNodeQueue.Add(0, robber.OccupiedNode);
 
         var copNodeQueue = new SortedList<float, Node>(new DuplicateKeyComparer<float>());
         foreach (var cop in cops) copNodeQueue.Add(0, cop.OccupiedNode);
-        
+
         var lastCopClosed = robber.OccupiedNode; //TODO: <- in BA explicit erklären
-        
+
         var robberCaughtStates = 0;
         while (robberNodeQueue.Count > 0)
         {
@@ -76,7 +75,7 @@ public class MultiagentTrailmax : ITeamStrategy
             {
                 var node = robberNodeQueue.Values[0];
                 robberNodeQueue.RemoveAt(0);
-                
+
                 if (robberClosed.Contains(node) || copsClosed.Contains(node) || copsClosed.Contains(predecessors[node])) continue;
                 robberClosed.Add(node);
                 foreach (var neighbour in node.Neighbours.Reverse<Node>())

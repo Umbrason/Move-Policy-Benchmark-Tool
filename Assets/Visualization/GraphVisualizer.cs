@@ -16,8 +16,8 @@ public class GraphVisualizer : MonoBehaviour
     public Graph m_graph;
     public Graph Graph { get => m_graph; set => SetGraph(value); }
 
-    Cached<ManualGame> cached_ManualGame = new(Cached<ManualGame>.GetOption.Parent);
-    ManualGame ManualGame => cached_ManualGame[this];
+    Cached<UnityGame> cached_ManualGame = new(Cached<UnityGame>.GetOption.Parent);
+    UnityGame ManualGame => cached_ManualGame[this];
     void Awake()
     {
         ManualGame.GameStart += OnGameStart;

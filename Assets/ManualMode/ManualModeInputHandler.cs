@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,31 +8,56 @@ using UnityEngine.InputSystem;
 public class ManualModeInputHandler : MonoBehaviour, ManualModeInputs.IManualGameActions
 {
     [SerializeField] Camera Camera;
-    [SerializeField] ManualGame manualGame;
+    [SerializeField] UnityGame manualGame;
     [SerializeField] GameObject MoveOptionMarker;
     Vector3 MouseWorldPosition;
     Vector3 KeyboardWorldDirection;
     private ManualModeInputs input;
-    void Start()
+
+    public static bool HasPendingSelection => requests.Count > 0;
+
+    public class MoveRequest
+    {
+        public MoveRequest(Agent agent)
+        {
+            Agent = agent;
+            Fulfilled = null;
+            MoveOptions = Agent.OccupiedNode.Neighbours.Append(Agent.OccupiedNode).ToArray();
+        }
+
+        public event Action Fulfilled;
+        public readonly Agent Agent;
+        public readonly Node[] MoveOptions;
+        public bool TryResolve(Node node)
+        {
+            if (!MoveOptions.Contains(node)) return false;
+            Fulfilled?.Invoke();
+            return true;
+        }
+    }
+    private static readonly Queue<MoveRequest> requests = new();
+
+    public static MoveRequest RequestMoveSelection(Agent agent)
+    {
+        var moveRequest = new MoveRequest(agent);
+        requests.Enqueue(moveRequest);
+        return moveRequest;
+    }
+
+    MoveRequest CurrentRequest;
+    void Update()
+    {
+        if (CurrentRequest != null || requests.Count == 0) return;
+        CurrentRequest = requests.Peek();
+        PlaceMarkers(CurrentRequest);
+    }
+
+    void Awake()
     {
         input = new ManualModeInputs();
         input.ManualGame.SetCallbacks(this);
         input.ManualGame.Enable();
-        manualGame.GameStart += PlaceMarkers;
-        manualGame.GameTick += PlaceMarkers;
-        manualGame.GameStop += ClearMarkers;
     }
-
-    void OnDestroy()
-    {
-        manualGame.GameStart -= PlaceMarkers;
-        manualGame.GameTick -= PlaceMarkers;
-        manualGame.GameStop -= ClearMarkers;
-    }
-
-    Agent PlayerAgent => manualGame.Game.Robbers.agents[0];
-    Node[] MoveOptions => PlayerAgent.OccupiedNode.Neighbours.Append(PlayerAgent.OccupiedNode).ToArray();
-
 
     private readonly List<GameObject> markers = new();
     void ClearMarkers()
@@ -39,9 +65,9 @@ public class ManualModeInputHandler : MonoBehaviour, ManualModeInputs.IManualGam
         foreach (var marker in markers) Destroy(marker);
         markers.Clear();
     }
-    void PlaceMarkers()
+    void PlaceMarkers(MoveRequest request)
     {
-        var options = MoveOptions;
+        var options = request.MoveOptions;
         while (options.Length != markers.Count)
         {
             if (options.Length > markers.Count)
@@ -72,19 +98,29 @@ public class ManualModeInputHandler : MonoBehaviour, ManualModeInputs.IManualGam
 
     public void OnMoveToMouse(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
+        if (!context.performed || CurrentRequest == null) return;
         var gridPos = Vector2Int.RoundToInt(MouseWorldPosition._xz());
-        if (!MoveOptions.Any(node => node.position == gridPos)) return;
-        manualGame.MovePlayer(MoveOptions.First(node => node.position == gridPos));
+        TryResolveCurrentMoveRequest(gridPos);
     }
 
     public void OnConfirmRelativeMove(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
+        if (!context.performed || CurrentRequest == null) return;
         var dir = Vector2Int.RoundToInt(KeyboardWorldDirection._xz());
-        var gridPos = PlayerAgent.OccupiedNode.position + dir;
-        if (!MoveOptions.Any(node => node.position == gridPos)) return;
-        manualGame.MovePlayer(MoveOptions.First(node => node.position == gridPos));
+        var gridPos = CurrentRequest.Agent.OccupiedNode.position + dir;
+        TryResolveCurrentMoveRequest(gridPos);
+    }
 
+    private void TryResolveCurrentMoveRequest(Vector2Int position)
+    {
+        if (CurrentRequest == null) return;
+        var request = CurrentRequest;
+        if (!request.MoveOptions.Any(option => option.position == position)) return;
+        var option = request.MoveOptions.First(option => option.position == position);
+        if (!request.TryResolve(option)) return;
+        request.Agent.Move(option);
+        ClearMarkers();
+        requests.Dequeue();
+        CurrentRequest = null;
     }
 }

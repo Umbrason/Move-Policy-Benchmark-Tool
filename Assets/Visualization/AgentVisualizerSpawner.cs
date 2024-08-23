@@ -6,8 +6,8 @@ using UnityEngine;
 
 public class AgentVisualizerSpawner : MonoBehaviour
 {
-    Cached<ManualGame> cached_ManualGame = new(Cached<ManualGame>.GetOption.Parent);
-    ManualGame ManualGame => cached_ManualGame[this];
+    Cached<UnityGame> cached_ManualGame = new(Cached<UnityGame>.GetOption.Parent);
+    UnityGame ManualGame => cached_ManualGame[this];
     [field: SerializeField] private AgentVisualizer AgentTemplate { get; set; }
 
     void Awake()
