@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class CopsNRobberGame
 {
@@ -14,18 +15,18 @@ public class CopsNRobberGame
     {
         this.graph = graph;
         this.teams = new List<Team>() {
-            new(new()),
-            new(new())
+            new(new(), Color.red, "Robbers"),
+            new(new(), Color.blue, "Cops")
         };
-        for (int r = 0; r < robberCount; r++) Robbers.agents.Add(new Robber());
-        for (int c = 0; c < copCount; c++) Cops.agents.Add(new Cop());
+        for (int r = 0; r < robberCount; r++) Robbers.Agents.Add(new Robber());
+        for (int c = 0; c < copCount; c++) Cops.Agents.Add(new Cop());
         this.strategies = strategies;
     }
 
     public void InitAgents()
     {
         foreach (var team in teams)
-            foreach (var agent in team.agents)
+            foreach (var agent in team.Agents)
             {
                 agent.Reset();
                 agent.SetPosition(provider.GetNextSpawnpoint(graph));

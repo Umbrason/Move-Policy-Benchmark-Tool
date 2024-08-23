@@ -12,11 +12,14 @@ public class UnityGame : MonoBehaviour
     public event Action GameTick;
     public event Action GameStop;
 
+    public int RobberCount;
+    public int CopCount;
+
     void Start()
     {
         var graph = Graph.FromMapFile(MapAsset);
         var strategies = new Dictionary<Team, ITeamStrategy>();
-        Game = new CopsNRobberGame(graph, 1, 3, strategies);
+        Game = new CopsNRobberGame(graph, RobberCount, CopCount, strategies);
         strategies[Game.Cops] = new CoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game));
         strategies[Game.Robbers] = new MultiagentTrailmax(Game);
         StartCoroutine(GameRoutine());
@@ -29,7 +32,7 @@ public class UnityGame : MonoBehaviour
             Game.InitAgents();
             Game.InitStrategies();
             GameStart?.Invoke();
-            while (Game.Robbers.agents.Any(agent => !(agent as Robber).Caught))
+            while (Game.Robbers.Agents.Any(agent => !(agent as Robber).Caught))
             {
                 Game.TickStrategies();
                 yield return new WaitUntil(() => !ManualModeInputHandler.HasPendingSelection);

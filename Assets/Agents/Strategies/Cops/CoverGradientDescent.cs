@@ -21,10 +21,11 @@ public class CoverGradientDescent : ITeamStrategy
 
     public void Tick()
     {
-        foreach (var cop in game.Cops.agents)
+        if (TargetAssignment.Any(pair => (pair.Value as Robber).Caught)) ReassignTargets(); //TODO: think about when should I reassign targets? sometimes a robber is cornered and the cop just leaves due to new assignment. what is the assignment criterion?
+        foreach (var cop in game.Cops.Agents)
         {
             var targetNode = TargetAssignment[cop].OccupiedNode;
-            var copNodes = game.Cops.agents.Where(c => c != cop).Select(c => c.OccupiedNode).ToList();
+            var copNodes = game.Cops.Agents.Where(c => c != cop).Select(c => c.OccupiedNode).ToList();
 
             var bestMove = cop.OccupiedNode;
             copNodes.Insert(0, cop.OccupiedNode);
@@ -53,7 +54,7 @@ public class CoverGradientDescent : ITeamStrategy
                 }
             }
             cop.Move(bestMove);
-        }
+        }        
     }
 
     private void ReassignTargets()

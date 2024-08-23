@@ -44,8 +44,8 @@ public class MultiagentTrailmax : ITeamStrategy
 
     public MultiagentTrailmax(CopsNRobberGame game)
     {
-        this.robbers = game.teams[0].agents;
-        this.cops = game.teams[1].agents;
+        this.robbers = game.teams[0].Agents;
+        this.cops = game.teams[1].Agents;
     }
 
     public void Init() { }

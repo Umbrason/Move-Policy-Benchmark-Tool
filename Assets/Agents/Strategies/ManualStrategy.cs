@@ -11,6 +11,6 @@ public class ManualStrategy : ITeamStrategy
 
     public void Tick()
     {
-        foreach (var agent in team.agents) ManualModeInputHandler.RequestMoveSelection(agent);
+        foreach (var agent in team.Agents) ManualModeInputHandler.RequestMoveSelection(agent);
     }
 }

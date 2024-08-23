@@ -21,13 +21,14 @@ public class CoverMinimizeAssignment : ITargetAssignmentStrategy
     public Dictionary<Cop, Robber> AssignAll(CopsNRobberGame game)
     {
         var options = ((ITargetAssignmentStrategy)this).AssignmentOptions(game);
+        if (options.Length == 0) return null;
         var AssignmentScores = new Dictionary<Dictionary<Cop, Robber>, int>();
         foreach (var assignment in options)
         {
             var score = 0;
-            foreach (var robber in game.Robbers.agents)
+            foreach (var robber in game.Robbers.Agents)
             {
-                var robberCover = RobberCover((Robber)robber, game.Cops.agents.Select(a => (Cop)a).Where(cop => assignment[cop] == robber).ToList());
+                var robberCover = RobberCover((Robber)robber, game.Cops.Agents.Select(a => (Cop)a).Where(cop => assignment[cop] == robber).ToList());
                 score = metric switch
                 {
                     Metric.Sum => score + robberCover.Count,
@@ -41,9 +42,11 @@ public class CoverMinimizeAssignment : ITargetAssignmentStrategy
         return bestAssignment.Key;
     }
 
+    //TODO: dont assume full connectivity of the graph
     public HashSet<Node> RobberCover(Robber robber, List<Cop> cops)
     {
         HashSet<Node> robberCover = new();
+        if (cops.Count == 0) return new(game.graph.Nodes);
         foreach (var node in game.graph.Nodes)
         {
             var robberPath = game.graph.FromTo(robber.OccupiedNode, node);

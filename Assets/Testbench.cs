@@ -31,7 +31,7 @@ public class Testbench : MonoBehaviour
         {
             Game.InitAgents();
             GameStart?.Invoke();
-            while (Game.teams[0].agents.Any(agent => !(agent as Robber).Caught))
+            while (Game.teams[0].Agents.Any(agent => !(agent as Robber).Caught))
             {
                 Game.TickStrategies();
                 GameTick?.Invoke();

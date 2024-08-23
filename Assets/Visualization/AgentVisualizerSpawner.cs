@@ -28,7 +28,7 @@ public class AgentVisualizerSpawner : MonoBehaviour
 
     private void OnGameStart()
     {
-        foreach (var agent in UnityGame.Game.teams.SelectMany(team => team.agents))
+        foreach (var agent in UnityGame.Game.teams.SelectMany(team => team.Agents))
         {
             var agentVisualizer = Instantiate(AgentTemplate, transform);
             agentVisualizer.Agent = agent;

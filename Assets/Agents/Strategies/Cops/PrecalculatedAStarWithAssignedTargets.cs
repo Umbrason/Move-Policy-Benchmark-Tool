@@ -23,7 +23,7 @@ public class PrecalculatedAStarWithAssignedTargets : ITeamStrategy
 
     public void Tick()
     {
-        foreach (var agent in team.agents)
+        foreach (var agent in team.Agents)
         {
             var target = (Agent)null;
             AssignTargetIfMissing(agent, ref target);
@@ -40,7 +40,7 @@ public class PrecalculatedAStarWithAssignedTargets : ITeamStrategy
     }
     private Agent GetClosestAgent(Agent agent)
     {
-        var byDistance = game.teams.Where(t => t != team).SelectMany(team => team.agents).Where(agent => !(agent as Robber).Caught).OrderBy(other => (other.OccupiedNode.position - agent.OccupiedNode.position).sqrMagnitude);
+        var byDistance = game.teams.Where(t => t != team).SelectMany(team => team.Agents).Where(agent => !(agent as Robber).Caught).OrderBy(other => (other.OccupiedNode.position - agent.OccupiedNode.position).sqrMagnitude);
         return byDistance.FirstOrDefault();
     }
 }
