@@ -1,4 +1,4 @@
 public interface ISpawnpointProvider
-{
-    public Node GetNextSpawnpoint(Graph graph);
+{    
+    public Node GetNextSpawnpoint(Graph graph, Team team);
 }

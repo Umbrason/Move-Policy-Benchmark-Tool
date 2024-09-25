@@ -3,12 +3,15 @@ using UnityEngine;
 
 public class Node
 {
-    public Vector2Int position;
+    public readonly Graph graph;
+    public readonly int index;
+    public readonly Vector2Int position;
     public readonly List<Node> Neighbours = new();
     public readonly List<Agent> Occupants = new();
-    public Node(Vector2Int position)
+    public Node(Vector2Int position, int index)
     {
         this.position = position;
+        this.index = index;
     }
 }
 

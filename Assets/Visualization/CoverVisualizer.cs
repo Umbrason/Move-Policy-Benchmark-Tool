@@ -90,7 +90,7 @@ public class CoverVisualizer : MonoBehaviour
         GenerateTexture(graph, graphNodeMin, graphNodeMax);
         Renderer.material.mainTexture = coverTexture;
         transform.localScale = new(w, h, 1);
-        transform.position = ((Vector2)(graphNodeMin + graphNodeMax) / 2f + new Vector2(w % 2, h % 2))._x0y();
+        transform.position = ((Vector2)(graphNodeMin + graphNodeMax) / 2f + new Vector2(0, h % 2))._x0y();
     }
     private void GenerateTexture(Graph graph, Vector2Int min, Vector2Int max)
     {

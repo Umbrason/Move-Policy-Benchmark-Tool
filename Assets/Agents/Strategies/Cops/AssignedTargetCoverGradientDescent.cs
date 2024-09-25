@@ -2,13 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-public class CoverGradientDescent : ITeamStrategy
+public class AssignedTargetCoverGradientDescent : ITeamStrategy
 {
     private readonly Dictionary<Agent, Agent> TargetAssignment = new();
     private readonly ITargetAssignmentStrategy targetAssignmentStrategy;
     private readonly CopsNRobberGame game;
 
-    public CoverGradientDescent(CopsNRobberGame game, ITargetAssignmentStrategy targetAssignmentStrategy)
+    public AssignedTargetCoverGradientDescent(CopsNRobberGame game, ITargetAssignmentStrategy targetAssignmentStrategy)
     {
         this.game = game;
         this.targetAssignmentStrategy = targetAssignmentStrategy;
@@ -21,6 +21,7 @@ public class CoverGradientDescent : ITeamStrategy
 
     public void Tick()
     {
+        if (game.Finished) return; // no ticking necessary
         if (TargetAssignment.Any(pair => (pair.Value as Robber).Caught)) ReassignTargets(); //TODO: think about when should I reassign targets? sometimes a robber is cornered and the cop just leaves due to new assignment. what is the assignment criterion?
         foreach (var cop in game.Cops.Agents)
         {
@@ -54,12 +55,13 @@ public class CoverGradientDescent : ITeamStrategy
                 }
             }
             cop.Move(bestMove);
-        }        
+        }
     }
 
     private void ReassignTargets()
     {
         var assignment = targetAssignmentStrategy.AssignAll(game);
+        if (assignment == null) throw new System.Exception("No assignment found");
         foreach (var pair in assignment) TargetAssignment[pair.Key] = pair.Value;
     }
 }

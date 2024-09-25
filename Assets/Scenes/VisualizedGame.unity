@@ -507,9 +507,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9e9b62f41a8cc44c8634ad5bc8206ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MapAsset: {fileID: 4900000, guid: c015555f63f5fe44bb58555f09abb2ba, type: 3}
-  RobberCount: 3
-  CopCount: 3
+  MapAsset: {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
+  RobberCount: 1
+  CopCount: 2
 --- !u!1 &762860759
 GameObject:
   m_ObjectHideFlags: 0

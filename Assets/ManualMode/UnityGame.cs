@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class UnityGame : MonoBehaviour
 {
-    public TextAsset MapAsset;
+    public Texture2D MapAsset;
     public CopsNRobberGame Game { get; private set; }
     public event Action GameStart;
     public event Action GameTick;
@@ -17,11 +17,10 @@ public class UnityGame : MonoBehaviour
 
     void Start()
     {
-        var graph = Graph.FromMapFile(MapAsset);
-        var strategies = new Dictionary<Team, ITeamStrategy>();
-        Game = new CopsNRobberGame(graph, RobberCount, CopCount, strategies);
-        strategies[Game.Cops] = new CoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game));
-        strategies[Game.Robbers] = new MultiagentTrailmax(Game);
+        var graph = Graph.FromTexture(MapAsset);
+        Game = new CopsNRobberGame(graph, CopCount, RobberCount);
+        Game.CopStrategy = new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game));
+        Game.RobberStrategy = new MultiagentTrailmax(Game);
         StartCoroutine(GameRoutine());
     }
 

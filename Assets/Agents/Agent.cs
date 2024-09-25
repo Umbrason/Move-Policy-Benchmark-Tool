@@ -8,7 +8,7 @@ public class Agent
         OccupiedNode?.Occupants?.Remove(this);
         node?.Occupants?.Add(this);
         this.OccupiedNode = node;
-        OnEnterNode(node);
+        if (node != null) OnEnterNode(node);
     }
 
     public void Move(Node node)
@@ -20,5 +20,5 @@ public class Agent
 
     protected virtual void OnEnterNode(Node node) { }
 
-    public virtual void Reset() { }
+    public virtual void Reset() { SetPosition(null); }
 }

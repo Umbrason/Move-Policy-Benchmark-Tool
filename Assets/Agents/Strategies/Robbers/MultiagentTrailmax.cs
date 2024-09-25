@@ -54,8 +54,8 @@ public class MultiagentTrailmax : ITeamStrategy
     private List<Node> GetRobberPath(Robber robber)
     {
         if (robber.Caught) return null;
-        var robberClosed = new HashSet<Node>(); //TODO: <- in BA explicit erklären
-        var copsClosed = new HashSet<Node>();
+        var robberClosed = new List<Node>(); //TODO: <- in BA explicit erklären
+        var copsClosed = new List<Node>();
         var predecessors = new Dictionary<Node, Node>() { { robber.OccupiedNode, robber.OccupiedNode } };
 
         var robberNodeQueue = new SortedList<float, Node>(new DuplicateKeyComparer<float>());
@@ -65,12 +65,17 @@ public class MultiagentTrailmax : ITeamStrategy
         foreach (var cop in cops) copNodeQueue.Add(0, cop.OccupiedNode);
 
         var lastCopClosed = robber.OccupiedNode; //TODO: <- in BA explicit erklären
-
+        /* var debugString = new System.Text.StringBuilder(); */
         var robberCaughtStates = 0;
         while (robberNodeQueue.Count > 0)
         {
             var minCostRobber = robberNodeQueue.Count > 0 ? robberNodeQueue.Keys[0] : float.MaxValue;
             var minCostCops = copNodeQueue.Count > 0 ? copNodeQueue.Keys[0] : float.MaxValue;
+            /* debugString.AppendLine($"minCostRobber:      {minCostRobber}");
+            debugString.AppendLine($"minCostCops:        {minCostCops}");
+            debugString.AppendLine($"robberCaughtStates: {robberCaughtStates}");
+            debugString.AppendLine($"robberClosed:       [{string.Join(", ", robberClosed.Select(node => node.position))}]");
+            debugString.AppendLine($"copsClosed:         [{string.Join(", ", copsClosed.Select(node => node.position))}]"); */
             if (minCostRobber <= minCostCops)
             {
                 var node = robberNodeQueue.Values[0];
@@ -102,12 +107,15 @@ public class MultiagentTrailmax : ITeamStrategy
             }
         }
         var reconstructNode = lastCopClosed;  //TODO: <- in BA explicit erklären
+/*         debugString.AppendLine($"predecessors:       [{string.Join(", ",predecessors.Select(pair => $"{pair.Key} -> {pair.Value}"))}]");
+        UnityEngine.Debug.Log(debugString.ToString()); */
         var path = new List<Node>();
         do
         {
             path.Insert(0, reconstructNode);
             reconstructNode = predecessors[reconstructNode];
         } while (predecessors[reconstructNode] != reconstructNode);
+
         return path;
     }
 

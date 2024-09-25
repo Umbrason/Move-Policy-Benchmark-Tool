@@ -21,7 +21,7 @@ public class CoverMinimizeAssignment : ITargetAssignmentStrategy
     public Dictionary<Cop, Robber> AssignAll(CopsNRobberGame game)
     {
         var options = ((ITargetAssignmentStrategy)this).AssignmentOptions(game);
-        if (options.Length == 0) return null;
+        if (options.Length == 0) throw new Exception("no assignment options!");
         var AssignmentScores = new Dictionary<Dictionary<Cop, Robber>, int>();
         foreach (var assignment in options)
         {

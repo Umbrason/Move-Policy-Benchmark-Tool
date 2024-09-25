@@ -53,7 +53,7 @@ public class Graph
                 var nextChar = textReader.Read();
                 var isWalkable = nextChar == '.';
                 if (!isWalkable) continue;
-                nodes[x, y] = new(new(x, y));
+                nodes[x, y] = new(new(x, y), nodeKeys.Count);
                 nodeKeys.Add((x, y));
             }
             var lineEnd = textReader.Read();
@@ -80,7 +80,6 @@ public class Graph
 
     public static Graph FromTexture(Texture2D texture)
     {
-
         var w = texture.width;
         var h = texture.height;
         Node[,] nodes = new Node[w, h];
@@ -91,13 +90,14 @@ public class Graph
                 var pixel = texture.GetPixel(x, y);
                 var isWalkable = pixel.grayscale > .5f;
                 if (!isWalkable) continue;
-                nodes[x, y] = new(new(x, y));
+                nodes[x, y] = new(new(x, y), nodeKeys.Count);
                 nodeKeys.Add((x, y));
             }
         for (int x = 0; x < w; x++)
             for (int y = 0; y < h; y++)
             {
                 var node = nodes[x, y];
+                if (node == null) continue;
                 foreach (var nb in Neighbourhood)
                 {
                     var nbx = x + nb.Item1;
@@ -130,7 +130,8 @@ public class Graph
 
     public class PrecalculatedAStarPaths
     {
-        private readonly Dictionary<Node, Dictionary<Node, List<Node>>> paths = new();
+        internal Dictionary<Node, Dictionary<Node, List<Node>>> cache = new();
+        internal PrecalculatedAStarPaths() { }
         public PrecalculatedAStarPaths(Graph graph)
         {
             Precalculate(graph);
@@ -140,7 +141,7 @@ public class Graph
             var threads = new List<Thread>();
             foreach (var from in graph.Nodes)
             {
-                paths[from] = new();
+                cache[from] = new();
                 var thread = new Thread(() =>
                 {
                     SortedList<float, Node> ExploreQueue = new(new DuplicateKeyComparer<float>()) { { 0, from } };
@@ -163,7 +164,7 @@ public class Graph
                             if (!ExploreQueue.ContainsValue(neighbour)) ExploreQueue.Add(nbCost, neighbour);
                         }
                     }
-                    foreach (var to in graph.Nodes) paths[from][to] = Reconstruct(predecessors, to);
+                    foreach (var to in graph.Nodes) cache[from][to] = Reconstruct(predecessors, to);
                 });
                 threads.Add(thread);
                 thread.Start();
@@ -185,7 +186,23 @@ public class Graph
 
         public List<Node> FromTo(Node start, Node end)
         {
-            return paths[start][end];
+            return cache[start][end];
         }
+    }
+
+    public Graph DeepCopy()
+    {
+        var newNodes = Nodes.Select(node => new Node(node.position, node.index)).ToList();
+        for (int i = 0; i < Nodes.Count; i++)
+            newNodes[i].Neighbours.AddRange(Nodes[i].Neighbours.Select(nb => newNodes[nb.index]));
+        var copy = new Graph(newNodes);
+        copy._Paths = new() { cache = new() };
+        foreach (var (startNode, DestinationPaths) in _Paths.cache)
+        {
+            var PathsByDestination = new Dictionary<Node, List<Node>>();
+            foreach (var (destination, path) in DestinationPaths) PathsByDestination[copy.Nodes[destination.index]] = path.Select(node => copy.Nodes[node.index]).ToList();
+            copy._Paths.cache[copy.Nodes[startNode.index]] = PathsByDestination;
+        }
+        return copy;
     }
 }
