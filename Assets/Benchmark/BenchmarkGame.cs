@@ -10,12 +10,21 @@ public class BenchmarkGame
     public readonly int copSpeed;
     public readonly int robberSpeed;
     public readonly int turnLimit;
+    public readonly CopStrategy copStrategy;
     public Result result;
+
 
     public CopsNRobberGame Game { get; private set; }
 
+    public enum CopStrategy
+    {
+        STMTAStar,
+        TRAP_Max,
+        TRAP_Sum,
+    }
 
-    public BenchmarkGame(Graph graph, int[] copPositions, int[] robberPositions, int turnLimit = 100, int copSpeed = 1, int robberSpeed = 1)
+
+    public BenchmarkGame(Graph graph, int[] copPositions, int[] robberPositions, int turnLimit = 100, int copSpeed = 1, int robberSpeed = 1, CopStrategy copStrategy = CopStrategy.STMTAStar)
     {
         this.graph = graph;
         this.turnLimit = turnLimit;
@@ -24,7 +33,13 @@ public class BenchmarkGame
         result.copStartPositions = copPositions;
         result.robberStartPositions = robberPositions;
         Game = new(graph, copPositions.Length, robberPositions.Length);
-        Game.strategies[Game.Cops] = new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game));
+        Game.strategies[Game.Cops] = copStrategy switch
+        {
+            CopStrategy.STMTAStar => new PrecalculatedAStarWithAssignedTargets(Game),
+            CopStrategy.TRAP_Max => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game)),
+            CopStrategy.TRAP_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Sum, Game)),
+            _ => null
+        };
         Game.strategies[Game.Robbers] = new MultiagentTrailmax(Game);
         Game.spawnpointProvider = new ArraySpawnpointProvider(new() {
             { Game.Cops, copPositions },
@@ -41,19 +56,19 @@ public class BenchmarkGame
             Game.TickStrategies();
             result.turns++;
         }
-        result.success = Game.Finished;
+        result.caughtAmount = Game.Robbers.Agents.Sum(agent => (agent as Robber).Caught ? 1 : 0);
         Game.ResetAgents();
     }
 
     public struct Result
     {
         public int turns;
-        public bool success;
+        public int caughtAmount;
         public int[] copStartPositions;
         public int[] robberStartPositions;
         public override readonly string ToString()
         {
-            return $"{turns}, {success}, [{string.Join(",", copStartPositions)}], [{string.Join(",", robberStartPositions)}]";
+            return $"{turns}, {caughtAmount}, C:[{string.Join(",", copStartPositions)}], R:[{string.Join(",", robberStartPositions)}]";
         }
     }
 }

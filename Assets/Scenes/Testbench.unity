@@ -259,13 +259,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fa003ab8379eec488f8737692a9a988, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CopCounts: 03000000
-  RobberCounts: 03000000
-  CopSpeeds: 01000000
-  RobberSpeeds: 01000000
-  Maps:
-  - {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
+  OutputDirectory: Q:\.UnityProjects\Move-Policy-Benchmark-Tool\Benchmarks
   benchmarkRunsPerCombination: 500
+  Configs:
+  - Map: {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
+    CopCount: 3
+    RobberCount: 3
+    CopSpeed: 1
+    RobberSpeed: 1
+    Strategy: 0
+  - Map: {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
+    CopCount: 3
+    RobberCount: 3
+    CopSpeed: 1
+    RobberSpeed: 1
+    Strategy: 1
+  - Map: {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
+    CopCount: 3
+    RobberCount: 3
+    CopSpeed: 1
+    RobberSpeed: 1
+    Strategy: 2
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
