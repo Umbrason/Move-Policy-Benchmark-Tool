@@ -1,55 +1,60 @@
 //Assumptions: not many nodes in here at a time, nodes get inserted in order of rising cost order
 
+using System;
+
 public class FastNodeQueue
 {
-    int[] indexQueue;
-    int[] costQueue;
-    int head;
-    int tail;
-    int capacity;
+    Ringbuffer lowerCostIndices;
+    Ringbuffer higherCostIndices;
+    public int NextCost;
+    int higherCost;
+
 
     public FastNodeQueue(int capacity)
     {
-        this.indexQueue = new int[capacity];
-        this.costQueue = new int[capacity];
-        this.capacity = capacity;
-        for (int i = 0; i < capacity; i++)
-        {
-            indexQueue[i] = -1;
-            costQueue[i] = int.MaxValue;
-        }
+        this.lowerCostIndices = new(capacity);
+        this.higherCostIndices = new(capacity);
+        NextCost = int.MaxValue;
+        higherCost = int.MaxValue;
     }
 
-    public int NextCost => costQueue[tail];
-    public int NextIndex => indexQueue[tail];
+    public int NextIndex => lowerCostIndices.NextValue;
+    public int Count => lowerCostIndices.Count + higherCostIndices.Count;
 
     public void Dequeue(out int cost, out int index)
     {
-        cost = costQueue[tail];
-        index = indexQueue[tail];
-        costQueue[tail] = int.MaxValue;
-        indexQueue[tail] = -1;
-        tail++;
-        if(tail >= capacity) tail -= capacity;        
+        if (lowerCostIndices.Count == 0) 
+            throw new InvalidOperationException("Sequence contains no elements");
+        cost = NextCost;
+        index = lowerCostIndices.Pop();
+        if (lowerCostIndices.Count == 0)
+        {
+            if (higherCostIndices.Count > 0)
+            {
+                (higherCostIndices, lowerCostIndices) = (lowerCostIndices, higherCostIndices);
+                NextCost = higherCost;
+                higherCost = int.MaxValue;
+            }
+            else NextCost = int.MaxValue;
+        }
     }
 
     public void Enqueue(int cost, int index)
     {
-        costQueue[head] = cost;
-        indexQueue[head] = index;
-        head++;
-        if(head >= capacity) head -= capacity;
-        if (head == tail) throw new System.Exception("Ringbuffer looped!");
+        if (NextCost == int.MaxValue) NextCost = cost;
+        if (cost > NextCost && higherCost == int.MaxValue) higherCost = cost;
+
+        if (cost < NextCost) throw new InvalidOperationException("Cannot add lower cost nodes!");
+        if (cost > NextCost && cost > higherCost) throw new InvalidOperationException("Cannot add two tiers of higher cost nodes!");
+
+        if (cost == NextCost) lowerCostIndices.Push(index);
+        else higherCostIndices.Push(index);
     }
 
     public void Reset()
     {
-        for (int i = 0; i < capacity; i++)
-        {
-            indexQueue[i] = -1;
-            costQueue[i] = int.MaxValue;
-        }
-        head = 0;
-        tail = 0;
+        lowerCostIndices.Reset();
+        higherCostIndices.Reset();
+        NextCost = higherCost = int.MaxValue;
     }
 }

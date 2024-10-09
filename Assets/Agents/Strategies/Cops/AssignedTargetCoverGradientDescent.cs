@@ -35,7 +35,7 @@ public class AssignedTargetCoverGradientDescent : ITeamStrategy
             var speed = game.teamSpeed[game.Cops];
             HashSet<int> MoveOptions = new((speed + 1) * (speed + 1)) { cop.OccupiedNode.index };
             for (int i = 0; i < speed; i++)
-            {                
+            {
                 foreach (var moveOption in MoveOptions.ToArray())
                     for (int n = 0; n < game.graph.Nodes[moveOption].neighbourCount; n++)
                     {

@@ -12,31 +12,30 @@ public class CoverGradientDescent : ITeamStrategy
         Sum,
         Max,
         Min,
-        Min_Tiebreak_Max,
-        Min_Tiebreak_Sum,
     }
+
+    private int cachedPursuerSpeed;
+    private int cachedTargetSpeed;
 
     public CoverGradientDescent(CopsNRobberGame game, Metric metric = Metric.Min)
     {
         this.game = game;
         this.metric = metric;
+        cachedTargetSpeed = game.teamSpeed[game.Robbers];
+        cachedPursuerSpeed = game.teamSpeed[game.Cops];
     }
 
     public void Init() { }
 
     public void Tick()
     {
-        if (game.Finished) return; // no ticking necessary
-        UnityEngine.Profiling.Profiler.BeginSample("Init");
+        if (game.Finished) return; // no ticking necessary        
         var targetNodes = game.Robbers.Agents.Where(r => !(r as Robber).Caught).Select(r => r.OccupiedNode.index).ToArray();
         if (targetNodes.Length == 0) return; //no agents left ot move towards
         var copUpdateOrder = game.Cops.Agents.OrderBy(cop => targetNodes.Select(target => game.graph.Distance(target, cop.OccupiedNode.index)).Min());
-        UnityEngine.Profiling.Profiler.EndSample();
-        
-        
+
         foreach (var cop in copUpdateOrder)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("Compute Cop");
             var copNodes = game.Cops.Agents.Where(c => c != cop).Select(c => c.OccupiedNode.index).Prepend(cop.OccupiedNode.index).ToArray();
             var bestMove = cop.OccupiedNode;
             var score = MoveScore(copNodes, targetNodes);//baseline - don't move to an inferior node
@@ -53,10 +52,10 @@ public class CoverGradientDescent : ITeamStrategy
                 }
                 else if (newScore == score)
                 {
-                    var newDistance = TiebreakScore(copNodes, targetNodes);
+                    var newTiebreaker = TiebreakScore(copNodes, targetNodes);
                     copNodes[0] = bestMove.index;
-                    var oldDistance = TiebreakScore(copNodes, targetNodes);
-                    if (oldDistance > newDistance)
+                    var oldTiebreaker = TiebreakScore(copNodes, targetNodes);
+                    if (oldTiebreaker > newTiebreaker)
                     {
                         bestMove = moveOption;
                         score = newScore;
@@ -64,57 +63,40 @@ public class CoverGradientDescent : ITeamStrategy
                 }
             }
             cop.Move(bestMove);
-            UnityEngine.Profiling.Profiler.EndSample();
         }
     }
-
-    //Theory: 
-    //best strategy is
-    // minimize smallest cover (leads to fastest capture)
-    // tiebreak -> minimize cover sum / max cover (helps prepare more captures)
-    // supertiebreaker -> distance to closest target / distance to target that is furthest from any cop (helps move towards relevant locations for captures)
+    
     private int TiebreakScore(int[] pursuerNodes, int[] targetNodes)
     {
-        UnityEngine.Profiling.Profiler.BeginSample("TiebreakScore");
         var relevantTarget = targetNodes[0];
-        var relevantTargetCover = game.graph.CalculateTargetCoverSize(targetNodes[0], pursuerNodes);
+        var sizes = game.graph.CalculateTargetCoverSizes(targetNodes, pursuerNodes, cachedTargetSpeed, cachedPursuerSpeed);
+        var relevantTargetCover = sizes[0];
         for (int i = 1; i < targetNodes.Length; i++)
         {
-            var cover = game.graph.CalculateTargetCoverSize(targetNodes[i], pursuerNodes);
+            var cover = sizes[i];
             if (relevantTargetCover < cover) continue;
             relevantTarget = targetNodes[i];
             relevantTargetCover = cover;
         }
-        var minDistance = game.graph.Distance(relevantTarget, pursuerNodes[0]);
-        UnityEngine.Profiling.Profiler.EndSample();
+        var minDistance = game.graph.Distance(relevantTarget, pursuerNodes[0]);        
         return minDistance;
     }
 
-    private int MoveScore(int[] copNodes, int[] targetNodes)
+    private int MoveScore(int[] pursuerNodes, int[] targetNodes)
     {
-        UnityEngine.Profiling.Profiler.BeginSample("MoveScore");
-        var score = game.graph.CalculateTargetCoverSize(targetNodes[0], copNodes);
-        if (metric == Metric.Min_Tiebreak_Max || metric == Metric.Min_Tiebreak_Sum) score = score * game.graph.Nodes.Length + score;
-        for (int i = 1; i < targetNodes.Length; i++)
+        var sizes = game.graph.CalculateTargetCoverSizes(targetNodes, pursuerNodes, cachedTargetSpeed, cachedPursuerSpeed);
+        var score = sizes[0];
+        for (int targetID = 1; targetID < targetNodes.Length; targetID++)
         {
-            int target = targetNodes[i];
-            UnityEngine.Profiling.Profiler.BeginSample("calc cover size");
-            var cover = game.graph.CalculateTargetCoverSize(target, copNodes);
-            UnityEngine.Profiling.Profiler.EndSample();
-            var maxCoverSum = game.graph.Nodes.Length * targetNodes.Length;
-            UnityEngine.Profiling.Profiler.BeginSample("switch");
+            var cover = sizes[targetID];
             score = metric switch
             {
                 Metric.Max => score > cover ? score : cover,
                 Metric.Min => score < cover ? score : cover,
                 Metric.Sum => score + cover,
-                Metric.Min_Tiebreak_Max => Math.Min(score / maxCoverSum, cover) * maxCoverSum + Math.Max(cover, score % maxCoverSum),
-                Metric.Min_Tiebreak_Sum => Math.Min(score / maxCoverSum, cover) * maxCoverSum + score % maxCoverSum + cover,
-                _ => throw new System.NotImplementedException()
+                _ => throw new NotImplementedException()
             };
-            UnityEngine.Profiling.Profiler.EndSample();
-        }
-        UnityEngine.Profiling.Profiler.EndSample();
+        }     
         return score;
     }
 }

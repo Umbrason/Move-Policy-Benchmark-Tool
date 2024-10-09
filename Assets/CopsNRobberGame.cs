@@ -60,9 +60,7 @@ public class CopsNRobberGame
         foreach (var team in teams)
         {
             var strategy = strategies.GetValueOrDefault(team);
-            UnityEngine.Profiling.Profiler.BeginSample(strategy.GetType().Name);
             strategies.GetValueOrDefault(team)?.Tick();
-            UnityEngine.Profiling.Profiler.EndSample();
         }
     }
 

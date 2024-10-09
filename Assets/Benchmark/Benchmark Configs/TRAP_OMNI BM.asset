@@ -53,5 +53,3 @@ MonoBehaviour:
     Strategy: 2
   - enabled: 0
     Strategy: 1
-  - enabled: 0
-    Strategy: 3

@@ -25,8 +25,6 @@ public class BenchmarkGame
         TRAP_OMNI_MIN,
         TRAP_OMNI_MAX,
         TRAP_OMNI_SUM,
-        TRAP_OMNI_MIN_TIEBREAK_SUM,
-        TRAP_OMNI_MIN_TIEBREAK_MAX,
     }
 
 
@@ -47,9 +45,7 @@ public class BenchmarkGame
             CopStrategy.TRAP_Max_Tiebreak_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max_Tiebreak_Sum, Game)),
             CopStrategy.TRAP_OMNI_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Max),
             CopStrategy.TRAP_OMNI_MIN => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min),
-            CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),
-            CopStrategy.TRAP_OMNI_MIN_TIEBREAK_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min_Tiebreak_Sum),
-            CopStrategy.TRAP_OMNI_MIN_TIEBREAK_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min_Tiebreak_Max),
+            CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),            
             _ => null
         };
         Game.strategies[Game.Robbers] = new MultiagentTrailmax(Game);

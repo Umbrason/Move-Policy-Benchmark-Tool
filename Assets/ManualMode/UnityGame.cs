@@ -37,9 +37,7 @@ public class UnityGame : MonoBehaviour
             BenchmarkGame.CopStrategy.TRAP_Max_Tiebreak_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max_Tiebreak_Sum, Game)),
             BenchmarkGame.CopStrategy.TRAP_OMNI_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Max),
             BenchmarkGame.CopStrategy.TRAP_OMNI_MIN => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min),
-            BenchmarkGame.CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),
-            BenchmarkGame.CopStrategy.TRAP_OMNI_MIN_TIEBREAK_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min_Tiebreak_Sum),
-            BenchmarkGame.CopStrategy.TRAP_OMNI_MIN_TIEBREAK_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min_Tiebreak_Max),
+            BenchmarkGame.CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),            
             _ => null
         };
         Game.RobberStrategy = new MultiagentTrailmax(Game);

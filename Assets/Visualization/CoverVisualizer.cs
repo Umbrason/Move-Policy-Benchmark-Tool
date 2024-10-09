@@ -41,11 +41,24 @@ public class CoverVisualizer : MonoBehaviour
         var targetNodes = UnityGame.Game.Robbers.Agents.Where(a => !(a as Robber).Caught).Select(r => r.OccupiedNode.index).ToArray();
         var pursuerNodes = UnityGame.Game.Cops.Agents.Select(r => r.OccupiedNode.index).ToArray();
 
-        var targetCover = UnityGame.Game.graph.CalculateTargetCover(targetNodes, pursuerNodes, robberSpeed, copSpeed);
+        var targetCover = UnityGame.Game.graph.CalculateTargetCovers(targetNodes, pursuerNodes, robberSpeed, copSpeed);
         foreach (var node in Graph.Nodes)
         {
             var local = ToTextureCoordinate(node.position);
-            var isRobberCover = targetCover.Contains(node.index);
+
+            var isRobberCover = false;
+            for (int i = 0; i < targetCover.Length; i++)
+            {
+                int[] arr = targetCover[i];
+                for (int j = 0; j < arr.Length; j++)
+                {
+                    int n = arr[j];
+                    if (node.index != n) continue;
+                    isRobberCover = true;
+                    break;
+                }
+                if (isRobberCover) break;
+            }
             var team = isRobberCover ? UnityGame.Game.Robbers : UnityGame.Game.Cops;
             coverTexture.SetPixel(local.x, local.y, team.Color * new Color(1f, 1f, 1f, .5f));
         }

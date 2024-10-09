@@ -10,11 +10,9 @@ public class Graph
 {
     public readonly Node[] Nodes;
     private readonly bool[] pursuerExplored;
-    private readonly bool[] targetCover;
-    private readonly int[] targetQueueIndex;
-    private readonly int[] pursuerQueueIndex;
-    private readonly int[] targetQueueCost;
-    private readonly int[] pursuerQueueCost;
+    readonly FastNodeQueue pursuerQueue;
+    private readonly List<bool[]> targetCoverPool;
+    readonly List<FastNodeQueue> targetNodeQueuePool;
     public string name;
 
     public Graph(Node[] nodes, string name, bool precalcAStar = true)
@@ -22,11 +20,9 @@ public class Graph
         Nodes = nodes;
 
         pursuerExplored = new bool[Nodes.Length];
-        targetCover = new bool[Nodes.Length];
-        targetQueueIndex = new int[Nodes.Length];
-        pursuerQueueIndex = new int[Nodes.Length];
-        targetQueueCost = new int[Nodes.Length];
-        pursuerQueueCost = new int[Nodes.Length];
+        pursuerQueue = new(Nodes.Length);
+        targetNodeQueuePool = new();
+        targetCoverPool = new();
 
         this.name = name;
         if (precalcAStar) PrecalcAStarPaths();
@@ -132,156 +128,169 @@ public class Graph
         return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToArray(), texture.name);
     }
 
-    public int CalculateTargetCoverSize(int targetNode, int[] pursuerNodes) => CalculateTargetCoverSize(new[] { targetNode }, pursuerNodes);
-    public int CalculateTargetCoverSize(int[] targetNodes, int[] pursuerNodes, int targetSpeed = 1, int pursuerSpeed = 1)
+    public int CalculateTargetCoverSize(int targetNode, int[] pursuerNodes) => CalculateTargetCoverSizes(new[] { targetNode }, pursuerNodes)[0];
+    public int[] CalculateTargetCoverSizes(int[] targetNodes, int[] pursuerNodes, int targetSpeed = 1, int pursuerSpeed = 1)
     {
-        int targetCoverCount = 0;
+        UnityEngine.Profiling.Profiler.BeginSample("GCAlloc Arrays");
+        var targetQueues = new FastNodeQueue[targetNodes.Length];
+        var targetCovers = new bool[targetNodes.Length][];
+        var targetCoverCounts = new int[targetNodes.Length];
+        UnityEngine.Profiling.Profiler.EndSample();
 
-        int targetQueueTail = 0;
-        int targetQueueHead = 0;
+        while (targetCoverPool.Count <= targetNodes.Length) targetCoverPool.Add(new bool[Nodes.Length]);
+        while (targetNodeQueuePool.Count <= targetNodes.Length) targetNodeQueuePool.Add(new(Nodes.Length));
 
-        int pursuerQueueTail = 0;
-        int pursuerQueueHead = 0;
-
-        for (int i = 0; i < Nodes.Length; i++)
+        for (int targetID = 0; targetID < targetNodes.Length; targetID++)
         {
-            pursuerExplored[i] = false;
-            targetCover[i] = false;
-            targetQueueCost[i] = int.MaxValue;
-            targetQueueIndex[i] = -1;
-            pursuerQueueCost[i] = int.MaxValue;
-            pursuerQueueIndex[i] = -1;
+            int target = targetNodes[targetID];
+            targetCovers[targetID] = targetCoverPool[targetID];
+            targetQueues[targetID] = targetNodeQueuePool[targetID];
+            targetQueues[targetID].Reset();
+            targetQueues[targetID].Enqueue(0, target);
+            targetCoverCounts[targetID] = 1;
+            for (int i = 0; i < Nodes.Length; i++)
+                targetCovers[targetID][i] = false;
+            targetCovers[targetID][target] = true;
         }
 
-        for (int i = 0; i < targetNodes.Length; i++)
+        #region init pursuers
+        pursuerQueue.Reset();
+        for (int node = 0; node < Nodes.Length; node++) pursuerExplored[node] = false;
+        for (int pursuerID = 0; pursuerID < pursuerNodes.Length; pursuerID++)
         {
-            int target = targetNodes[i];
-            if (targetCover[target]) continue;
-            targetCoverCount++;
-            targetCover[target] = true;
-            targetQueueCost[targetQueueHead] = 0;
-            targetQueueIndex[targetQueueHead++] = target;
-        }
-
-        for (int i = 0; i < pursuerNodes.Length; i++)
-        {
-            int pursuer = pursuerNodes[i];
+            int pursuer = pursuerNodes[pursuerID];
             if (pursuerExplored[pursuer]) continue;
             pursuerExplored[pursuer] = true;
-            pursuerQueueCost[pursuerQueueHead] = 0;
-            pursuerQueueIndex[pursuerQueueHead++] = pursuer;
+            pursuerQueue.Enqueue(0, pursuer);
         }
+        #endregion
 
-        while (targetQueueIndex[targetQueueTail] >= 0)
+        while (true)
         {
-            var minCostTarget = targetQueueCost[targetQueueTail];
-            var minCostPursuers = pursuerQueueCost[pursuerQueueTail];            
+            var bestTargetID = -1;
+            var minCostTarget = int.MaxValue;
+            for (int targetID = 0; targetID < targetNodes.Length; targetID++)
+            {
+                var cost = targetQueues[targetID].NextCost;
+                if (cost >= minCostTarget) continue;
+                bestTargetID = targetID;
+                minCostTarget = cost;
+            }
+            if (minCostTarget == int.MaxValue) break;
+            var minCostPursuers = pursuerQueue.NextCost;
+
             if (minCostTarget < minCostPursuers)
-            {            
-                var nodeIndex = targetQueueIndex[targetQueueTail++];
+            {
+                targetQueues[bestTargetID].Dequeue(out var cost, out var nodeIndex);
                 for (int i = 0; i < Nodes[nodeIndex].neighbourCount; i++)
                 {
                     var nb = Nodes[nodeIndex].Neighbours[i];
-                    if (targetCover[nb.index] || pursuerExplored[nb.index]) continue;
-                    targetCover[nb.index] = true;
-                    targetCoverCount++;
-                    targetQueueIndex[targetQueueHead] = nb.index;
-                    targetQueueCost[targetQueueHead++] = minCostTarget + pursuerSpeed;
+                    if (targetCovers[bestTargetID][nb.index] || pursuerExplored[nb.index]) continue;
+                    targetCovers[bestTargetID][nb.index] = true;
+                    targetCoverCounts[bestTargetID]++;
+                    targetQueues[bestTargetID].Enqueue(minCostTarget + pursuerSpeed, nb.index);
                 }
             }
             else
-            {        
-                var nodeIndex = pursuerQueueIndex[pursuerQueueTail++];
+            {
+                pursuerQueue.Dequeue(out var cost, out var nodeIndex);
                 for (int i = 0; i < Nodes[nodeIndex].neighbourCount; i++)
                 {
                     var nb = Nodes[nodeIndex].Neighbours[i];
                     if (pursuerExplored[nb.index]) continue;
                     pursuerExplored[nb.index] = true;
-                    pursuerQueueIndex[pursuerQueueHead] = nb.index;
-                    pursuerQueueCost[pursuerQueueHead++] = minCostPursuers + targetSpeed;
-                }             
+                    pursuerQueue.Enqueue(minCostPursuers + targetSpeed, nb.index);
+                }
             }
         }
-        return targetCoverCount;
+        return targetCoverCounts;
     }
-    public int[] CalculateTargetCover(int[] targetNodes, int[] pursuerNodes, int targetSpeed = 1, int pursuerSpeed = 1)
+    public int[][] CalculateTargetCovers(int[] targetNodes, int[] pursuerNodes, int targetSpeed = 1, int pursuerSpeed = 1)
     {
-        int targetCoverCount = 0;
+        var targetQueues = new FastNodeQueue[targetNodes.Length];
+        var targetCovers = new bool[targetNodes.Length][];
+        var targetCoverCounts = new int[targetNodes.Length];
 
-        int targetQueueTail = 0;
-        int targetQueueHead = 0;
+        while (targetCoverPool.Count <= targetNodes.Length) targetCoverPool.Add(new bool[Nodes.Length]);
+        while (targetNodeQueuePool.Count <= targetNodes.Length) targetNodeQueuePool.Add(new(Nodes.Length));
 
-        int pursuerQueueTail = 0;
-        int pursuerQueueHead = 0;
-
-        for (int i = 0; i < Nodes.Length; i++)
+        for (int targetID = 0; targetID < targetNodes.Length; targetID++)
         {
-            pursuerExplored[i] = false;
-            targetCover[i] = false;
-            targetQueueCost[i] = int.MaxValue;
-            targetQueueIndex[i] = -1;
-            pursuerQueueCost[i] = int.MaxValue;
-            pursuerQueueIndex[i] = -1;
+            int target = targetNodes[targetID];
+            targetCovers[targetID] = targetCoverPool[targetID];
+            targetQueues[targetID] = targetNodeQueuePool[targetID];
+            targetQueues[targetID].Reset();
+            targetQueues[targetID].Enqueue(0, target);
+            targetCoverCounts[targetID] = 1;
+            for (int i = 0; i < Nodes.Length; i++)
+                targetCovers[targetID][i] = false;
+            targetCovers[targetID][target] = true;
         }
 
-
-        for (int i = 0; i < targetNodes.Length; i++)
+        #region init pursuers
+        pursuerQueue.Reset();
+        for (int node = 0; node < Nodes.Length; node++) pursuerExplored[node] = false;
+        for (int pursuerID = 0; pursuerID < pursuerNodes.Length; pursuerID++)
         {
-            int target = targetNodes[i];
-            if (targetCover[target]) continue;
-            targetCoverCount++;
-            targetCover[target] = true;
-            targetQueueCost[targetQueueHead] = 0;
-            targetQueueIndex[targetQueueHead++] = target;
-        }
-
-        for (int i = 0; i < pursuerNodes.Length; i++)
-        {
-            int pursuer = pursuerNodes[i];
+            int pursuer = pursuerNodes[pursuerID];
+            if (pursuerExplored[pursuer]) continue;
             pursuerExplored[pursuer] = true;
-            pursuerQueueCost[pursuerQueueHead] = 0;
-            pursuerQueueIndex[pursuerQueueHead++] = pursuer;
+            pursuerQueue.Enqueue(0, pursuer);
         }
+        #endregion
 
-        while (targetQueueIndex[targetQueueTail] >= 0)
+        while (true)
         {
-            var minCostTarget = targetQueueCost[targetQueueTail];
-            var minCostPursuers = pursuerQueueCost[pursuerQueueTail];
+            var bestTargetID = -1;
+            var minCostTarget = int.MaxValue;
+            for (int targetID = 0; targetID < targetNodes.Length; targetID++)
+            {
+                var cost = targetQueues[targetID].NextCost;
+                if (cost >= minCostTarget) continue;
+                bestTargetID = targetID;
+                minCostTarget = cost;
+            }
+            if (minCostTarget == int.MaxValue) break;
+            var minCostPursuers = pursuerQueue.NextCost;
+
             if (minCostTarget < minCostPursuers)
             {
-                var nodeIndex = targetQueueIndex[targetQueueTail++];
+                targetQueues[bestTargetID].Dequeue(out var cost, out var nodeIndex);
                 for (int i = 0; i < Nodes[nodeIndex].neighbourCount; i++)
                 {
                     var nb = Nodes[nodeIndex].Neighbours[i];
-                    if (targetCover[nb.index] || pursuerExplored[nb.index]) continue;
-                    targetCover[nb.index] = true;
-                    targetCoverCount++;
-                    targetQueueIndex[targetQueueHead] = nb.index;
-                    targetQueueCost[targetQueueHead++] = minCostTarget + pursuerSpeed;
+                    if (targetCovers[bestTargetID][nb.index] || pursuerExplored[nb.index]) continue;
+                    targetCovers[bestTargetID][nb.index] = true;
+                    targetCoverCounts[bestTargetID]++;
+                    targetQueues[bestTargetID].Enqueue(minCostTarget + pursuerSpeed, nb.index);
                 }
             }
             else
             {
-                var nodeIndex = pursuerQueueIndex[pursuerQueueTail++];
+                pursuerQueue.Dequeue(out var cost, out var nodeIndex);
                 for (int i = 0; i < Nodes[nodeIndex].neighbourCount; i++)
                 {
                     var nb = Nodes[nodeIndex].Neighbours[i];
                     if (pursuerExplored[nb.index]) continue;
                     pursuerExplored[nb.index] = true;
-                    pursuerQueueIndex[pursuerQueueHead] = nb.index;
-                    pursuerQueueCost[pursuerQueueHead++] = minCostPursuers + targetSpeed;
+                    pursuerQueue.Enqueue(minCostPursuers + targetSpeed, nb.index);
                 }
             }
         }
-        var targetCoverArray = new int[targetCoverCount];
-        int j = 0;
-        for (int i = 0; i < Nodes.Length; i++)
-            if (targetCover[i])
-            {
-                targetCoverArray[j] = i;
-                j++;
-            }
-        return targetCoverArray;
+        var targetCoverArrays = new int[targetNodes.Length][];
+        for (int targetID = 0; targetID < targetNodes.Length; targetID++)
+        {
+            var arr = new int[targetCoverCounts[targetID]];
+            int j = 0;
+            for (int i = 0; i < Nodes.Length; i++)
+                if (targetCovers[targetID][i])
+                {
+                    arr[j] = i;
+                    j++;
+                }
+            targetCoverArrays[targetID] = arr;
+        }
+        return targetCoverArrays;
     }
 
     readonly struct CoverExplorationNode

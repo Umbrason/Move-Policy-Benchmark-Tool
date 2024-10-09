@@ -56,8 +56,7 @@ public class MultiagentTrailmax : ITeamStrategy
     }
 
     public void Init() { }
-
-    //TODO: behaviour looks fine, except for the easy situations, where robber doesnt fully commit into dead ends to maximize capture time
+    
     private int[] GetRobberPath(Robber robber, Graph graph)
     {
         if (robber.Caught) return null;
@@ -79,7 +78,7 @@ public class MultiagentTrailmax : ITeamStrategy
         var cached_CopSpeed = copSpeed;
         var lastCopClosed = robber.OccupiedNode;
         var robberCaughtStates = 0;
-        while (robberQueue.NextIndex >= 0)
+        while (robberQueue.Count > 0)
         {
             var minCostRobber = robberQueue.NextCost;
             var minCostCops = copQueue.NextCost;
