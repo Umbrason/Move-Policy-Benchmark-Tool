@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class CopsNRobberGame
 {
-    public readonly Graph graph = new(new());
+    public readonly Graph graph = new(new Node[0], "");
     public readonly List<Team> teams = new();
     public Team Robbers => teams[0];
     public Team Cops => teams[1];
@@ -26,8 +26,8 @@ public class CopsNRobberGame
             new(new(), Color.blue, "Cops")
         };
         this.strategies = new() {
-            { Robbers, new ManualStrategy(Robbers) },
-            { Cops, new ManualStrategy(Cops) }
+            { Robbers, new ManualStrategy(Robbers, this) },
+            { Cops, new ManualStrategy(Cops, this) }
         };
         this.teamSpeed = new()
         {
@@ -58,8 +58,12 @@ public class CopsNRobberGame
     public void TickStrategies()
     {
         foreach (var team in teams)
-            for (int i = 0; i < teamSpeed[team]; i++)
-                strategies.GetValueOrDefault(team)?.Tick();
+        {
+            var strategy = strategies.GetValueOrDefault(team);
+            UnityEngine.Profiling.Profiler.BeginSample(strategy.GetType().Name);
+            strategies.GetValueOrDefault(team)?.Tick();
+            UnityEngine.Profiling.Profiler.EndSample();
+        }
     }
 
     public void ResetAgents()

@@ -14,7 +14,7 @@ public class Agent
     public void Move(Node node)
     {
         if (node == OccupiedNode) return;
-        if (!OccupiedNode.Neighbours.Contains(node)) return;
+        //if (!OccupiedNode.Neighbours.Contains(node)) return;
         SetPosition(node);
     }
 

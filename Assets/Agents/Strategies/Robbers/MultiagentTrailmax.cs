@@ -35,79 +35,97 @@ funcostRobberion MultiplePursuersTraiMax()
     return target_path
 */
 using System.Collections.Generic;
-using System.Linq;
 
 public class MultiagentTrailmax : ITeamStrategy
 {
-    private readonly List<Agent> robbers;
-    private readonly List<Agent> cops;
+    private List<Agent> robbers => game.Robbers.Agents;
+    private List<Agent> cops => game.Cops.Agents;
+    private Graph graph => game.graph;
+    private readonly CopsNRobberGame game;
+    int robberSpeed => game.teamSpeed[game.Robbers];
+    int copSpeed => game.teamSpeed[game.Cops];
+
+    private readonly FastNodeQueue robberQueue;
+    private readonly FastNodeQueue copQueue;
 
     public MultiagentTrailmax(CopsNRobberGame game)
     {
-        this.robbers = game.teams[0].Agents;
-        this.cops = game.teams[1].Agents;
+        this.game = game;
+        robberQueue = new(game.graph.Nodes.Length);
+        copQueue = new(game.graph.Nodes.Length);
     }
 
     public void Init() { }
 
     //TODO: behaviour looks fine, except for the easy situations, where robber doesnt fully commit into dead ends to maximize capture time
-    private List<Node> GetRobberPath(Robber robber)
+    private int[] GetRobberPath(Robber robber, Graph graph)
     {
         if (robber.Caught) return null;
-        var robberClosed = new HashSet<Node>();
-        var copsClosed = new HashSet<Node>();
-        var predecessors = new Dictionary<Node, Node>() { { robber.OccupiedNode, robber.OccupiedNode } };
+        var graphSize = graph.Nodes.Length;
+        var robberClosed = new bool[graphSize];
+        var robberClosedCount = 0;
+        var copsClosed = new bool[graphSize];
+        var predecessors = new int[graphSize];
+        for (int i = 0; i < predecessors.Length; i++) predecessors[i] = -1;
+        predecessors[robber.OccupiedNode.index] = robber.OccupiedNode.index;
 
-        var robberNodeQueue = new SortedList<float, Node>(new DuplicateKeyComparer<float>()) { { 0, robber.OccupiedNode } };
+        robberQueue.Reset();
+        copQueue.Reset();
 
-        var copNodeQueue = new SortedList<float, Node>(new DuplicateKeyComparer<float>());
-        foreach (var cop in cops) copNodeQueue.Add(0, cop.OccupiedNode);
+        robberQueue.Enqueue(0, robber.OccupiedNode.index);
+        foreach (var cop in cops) copQueue.Enqueue(0, cop.OccupiedNode.index);
 
+        var cached_RobberSpeed = robberSpeed;
+        var cached_CopSpeed = copSpeed;
         var lastCopClosed = robber.OccupiedNode;
         var robberCaughtStates = 0;
-        while (robberNodeQueue.Count > 0)
+        while (robberQueue.NextIndex >= 0)
         {
-            var minCostRobber = robberNodeQueue.Count > 0 ? robberNodeQueue.Keys[0] : float.MaxValue;
-            var minCostCops = copNodeQueue.Count > 0 ? copNodeQueue.Keys[0] : float.MaxValue;
-            if (minCostRobber <= minCostCops)
+            var minCostRobber = robberQueue.NextCost;
+            var minCostCops = copQueue.NextCost;
+            if (minCostRobber < minCostCops)
             {
-                var node = robberNodeQueue.Values[0];
-                robberNodeQueue.RemoveAt(0);
-
-                if (robberClosed.Contains(node) || copsClosed.Contains(node) || copsClosed.Contains(predecessors[node])) continue;
-                robberClosed.Add(node);
-                foreach (var neighbour in node.Neighbours.Reverse<Node>())
+                robberQueue.Dequeue(out var cost, out var index);
+                if (robberClosed[index] || copsClosed[index] || copsClosed[predecessors[index]]) continue;
+                var node = graph.Nodes[index];
+                robberClosed[index] = true;
+                robberClosedCount++;
+                for (int i = node.neighbourCount - 1; i >= 0; i--)
                 {
-                    if (robberClosed.Contains(neighbour)) continue;
-                    if (!predecessors.ContainsKey(neighbour)) predecessors[neighbour] = node;
-                    robberNodeQueue.Add(minCostRobber + node.Distance(neighbour), neighbour); // Update instead of add could improve performance
+                    Node neighbour = node.Neighbours[i];
+                    if (robberClosed[neighbour.index]) continue;
+                    if (predecessors[neighbour.index] == -1) predecessors[neighbour.index] = index;
+                    robberQueue.Enqueue(minCostRobber + cached_CopSpeed, neighbour.index);
                 }
             }
             else
             {
-                var node = copNodeQueue.Values[0];
-                copNodeQueue.RemoveAt(0);
-                if (copsClosed.Contains(node)) continue;
-                copsClosed.Add(node);
-                if (robberClosed.Contains(node))
+                copQueue.Dequeue(out var cost, out var index);
+                if (copsClosed[index]) continue;
+                var node = graph.Nodes[index];
+                copsClosed[index] = true;
+                if (robberClosed[index])
                 {
                     lastCopClosed = node;
                     robberCaughtStates++;
-                    if (robberCaughtStates == robberClosed.Count) break;
+                    if (robberCaughtStates == robberClosedCount) break;
                 }
-                foreach (var neighbour in node.Neighbours)
-                    copNodeQueue.Add(minCostCops + node.Distance(neighbour), neighbour);
+                for (int i = 0; i < node.neighbourCount; i++)
+                    copQueue.Enqueue(minCostCops + cached_RobberSpeed, node.Neighbours[i].index);
             }
         }
-        var reconstructNode = lastCopClosed;
-        var path = new List<Node>();
-        do
-        {
-            path.Insert(0, reconstructNode);
-            reconstructNode = predecessors[reconstructNode];
-        } while (predecessors[reconstructNode] != reconstructNode);
+        return ReconstructPath(predecessors, lastCopClosed.index);
+    }
 
-        return path;
+    private int[] ReconstructPath(int[] predecessors, int to)
+    {
+        var path = new List<int>();
+        while (predecessors[to] != to)
+        {
+            path.Insert(0, to);
+            to = predecessors[to];
+        }
+        return path.ToArray();
     }
 
     public void Tick()
@@ -115,9 +133,12 @@ public class MultiagentTrailmax : ITeamStrategy
         foreach (var robber in robbers)
         {
             if ((robber as Robber).Caught) continue;
-            var path = GetRobberPath(robber as Robber);
-            if (path?.Count < 1) continue;
-            robber.Move(path[0]);
+            var path = GetRobberPath(robber as Robber, graph);
+            for (int i = 0; i < robberSpeed; i++)
+            {
+                if (path?.Length <= i) continue;
+                robber.Move(game.graph.Nodes[path[i]]);
+            }
         }
     }
 }

@@ -5,7 +5,10 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
-    path: Assets/Scenes/VisualizedGame.unity
+  - enabled: 0
+    path: Assets/Visualization/VisualizedGame.unity
     guid: 2cda990e2423bbf4892e6590ba056729
+  - enabled: 1
+    path: Assets/Benchmark/Testbench.unity
+    guid: 01e4e8b317e465947bd07ca45fc4afb4
   m_configObjects: {}

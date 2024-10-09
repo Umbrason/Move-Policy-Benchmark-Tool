@@ -25,31 +25,44 @@ public class AssignedTargetCoverGradientDescent : ITeamStrategy
         if (TargetAssignment.Any(pair => (pair.Value as Robber).Caught)) ReassignTargets(); //TODO: think about when should I reassign targets? sometimes a robber is cornered and the cop just leaves due to new assignment. what is the assignment criterion?
         foreach (var cop in game.Cops.Agents)
         {
-            var targetNode = TargetAssignment[cop].OccupiedNode;
-            var copNodes = game.Cops.Agents.Where(c => c != cop).Select(c => c.OccupiedNode).ToList();
+            var targetNode = TargetAssignment[cop].OccupiedNode.index;
+            var copNodes = game.Cops.Agents.Where(c => c != cop).Select(c => c.OccupiedNode.index).Prepend(cop.OccupiedNode.index).ToArray();
 
             var bestMove = cop.OccupiedNode;
-            copNodes.Insert(0, cop.OccupiedNode);
-            var score = game.graph.CalculateTargetCover(targetNode, copNodes).Count; //baseline - don't move to an inferior node            
+            var score = game.graph.CalculateTargetCoverSize(targetNode, copNodes); //baseline - don't move to an inferior node            
 
-            foreach (var moveOption in cop.OccupiedNode.Neighbours)
+            //build move options for nodes in range x
+            var speed = game.teamSpeed[game.Cops];
+            HashSet<int> MoveOptions = new((speed + 1) * (speed + 1)) { cop.OccupiedNode.index };
+            for (int i = 0; i < speed; i++)
+            {                
+                foreach (var moveOption in MoveOptions.ToArray())
+                    for (int n = 0; n < game.graph.Nodes[moveOption].neighbourCount; n++)
+                    {
+                        Node neighbour = game.graph.Nodes[moveOption].Neighbours[n];
+                        MoveOptions.Add(neighbour.index);
+                    }
+            }
+            MoveOptions.Remove(cop.OccupiedNode.index);
+
+            foreach (var moveOption in MoveOptions)
             {
                 copNodes[0] = moveOption;
-                var newScore = game.graph.CalculateTargetCover(targetNode, copNodes).Count; //calc cover of available moves
+                var newScore = game.graph.CalculateTargetCoverSize(targetNode, copNodes); //calc cover of available moves
                 //TODO: something is off here... pursuers get stuck in two repetitive moves even when I dont move at all...
                 // mayhaps the cover score is wrong?
                 if (newScore < score) //choose best cover
                 {
-                    bestMove = moveOption;
+                    bestMove = game.graph.Nodes[moveOption];
                     score = newScore;
                 }
                 else if (newScore == score) //tiebreaker = AStar path length to target
                 {
-                    var oldDistance = game.graph.FromTo(bestMove, targetNode).Count;
-                    var newDistance = game.graph.FromTo(moveOption, targetNode).Count;
+                    var oldDistance = game.graph.Distance(bestMove.index, targetNode);
+                    var newDistance = game.graph.Distance(moveOption, targetNode);
                     if (oldDistance > newDistance) //only move when new node is better than old node
                     {
-                        bestMove = moveOption;
+                        bestMove = game.graph.Nodes[moveOption];
                         score = newScore;
                     }
                 }

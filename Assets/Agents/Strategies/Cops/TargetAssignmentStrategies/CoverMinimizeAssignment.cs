@@ -7,7 +7,8 @@ public class CoverMinimizeAssignment : ITargetAssignmentStrategy
     public enum Metric
     {
         Sum,
-        Max
+        Max,
+        Max_Tiebreak_Sum
     }
     private readonly Metric metric;
     private readonly CopsNRobberGame game;
@@ -28,11 +29,12 @@ public class CoverMinimizeAssignment : ITargetAssignmentStrategy
             var score = 0;
             foreach (var robber in game.Robbers.Agents)
             {
-                var robberCover = RobberCover((Robber)robber, game.Cops.Agents.Select(a => (Cop)a).Where(cop => assignment[cop] == robber).ToList());
+                var robberCover = game.graph.CalculateTargetCoverSize(robber.OccupiedNode.index, game.Cops.Agents.Where(cop => assignment[(Cop)cop] == robber).Select(a => a.OccupiedNode.index).ToArray());
                 score = metric switch
                 {
-                    Metric.Sum => score + robberCover.Count,
-                    Metric.Max => Math.Max(score, robberCover.Count),
+                    Metric.Sum => score + robberCover,
+                    Metric.Max => Math.Max(score, robberCover),
+                    Metric.Max_Tiebreak_Sum => Math.Max(score / game.graph.Nodes.Length, robberCover) * game.graph.Nodes.Length + robberCover + score % game.graph.Nodes.Length,
                     _ => score
                 };
             }
@@ -40,19 +42,5 @@ public class CoverMinimizeAssignment : ITargetAssignmentStrategy
         };
         var bestAssignment = AssignmentScores.OrderBy(assignment => assignment.Value).First();
         return bestAssignment.Key;
-    }
-
-    //TODO: dont assume full connectivity of the graph
-    public HashSet<Node> RobberCover(Robber robber, List<Cop> cops)
-    {
-        HashSet<Node> robberCover = new();
-        if (cops.Count == 0) return new(game.graph.Nodes);
-        foreach (var node in game.graph.Nodes)
-        {
-            var robberPath = game.graph.FromTo(robber.OccupiedNode, node);
-            var bestCopPath = cops.Select(cop => game.graph.FromTo(cop.OccupiedNode, node)).OrderBy(path => path.Count).First();
-            if (robberPath.Count < bestCopPath.Count) robberCover.Add(node);
-        }
-        return robberCover;
-    }
+    }    
 }

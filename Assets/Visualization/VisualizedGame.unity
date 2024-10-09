@@ -141,7 +141,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &428442120
 Transform:
   m_ObjectHideFlags: 0
@@ -507,9 +507,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9e9b62f41a8cc44c8634ad5bc8206ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MapAsset: {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
-  RobberCount: 1
-  CopCount: 2
+  MapAsset: {fileID: 4900000, guid: 5f5af98875ef2cb438ca0a65d6656a39, type: 3}
+  copSpeed: 1
+  robberSpeed: 1
+  CopNodes: 1f0800008f07000026040000
+  RobberNodes: 8c0500001301000010070000
+  randomizePositions: 1
+  copStrategy: 4
+  autoPlay: 1
 --- !u!1 &762860759
 GameObject:
   m_ObjectHideFlags: 0

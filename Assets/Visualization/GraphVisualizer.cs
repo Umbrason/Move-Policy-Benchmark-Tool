@@ -39,7 +39,7 @@ public class GraphVisualizer : MonoBehaviour
         GenerateTexture(graph, min, max);
         Renderer.material.mainTexture = graphTexture;
         transform.localScale = new(w, h, 1);
-        transform.position = ((Vector2)(min + max) / 2f + new Vector2(0, h % 2))._x0y();
+        transform.position = ((Vector2)(min + max) / 2f)._x0y();// + new Vector2(0, h % 2))._x0y();
     }
 
     private void GenerateTexture(Graph graph, Vector2Int min, Vector2Int max)

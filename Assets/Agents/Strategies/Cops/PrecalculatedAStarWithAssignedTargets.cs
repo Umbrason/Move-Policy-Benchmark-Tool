@@ -23,14 +23,15 @@ public class PrecalculatedAStarWithAssignedTargets : ITeamStrategy
 
     public void Tick()
     {
-        foreach (var agent in team.Agents)
-        {
-            var target = (Agent)null;
-            AssignTargetIfMissing(agent, ref target);
-            if (target == null) break; //all robbers caught
-            var path = game.graph.FromTo(agent.OccupiedNode, target.OccupiedNode);
-            agent.Move(path[0]);
-        }
+        for (int i = 0; i < game.teamSpeed[game.Cops]; i++)
+            foreach (var agent in team.Agents)
+            {
+                var target = (Agent)null;
+                AssignTargetIfMissing(agent, ref target);
+                if (target == null) break; //all robbers caught
+                var path = game.graph.FromTo(agent.OccupiedNode, target.OccupiedNode);
+                if (path.Length > 0) agent.Move(game.graph.Nodes[path[0]]);
+            }
     }
 
     //TODO: use ITargetAssignmentStrategy

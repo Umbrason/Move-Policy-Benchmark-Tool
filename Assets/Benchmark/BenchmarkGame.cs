@@ -21,6 +21,12 @@ public class BenchmarkGame
         STMTAStar,
         TRAP_Max,
         TRAP_Sum,
+        TRAP_Max_Tiebreak_Sum,
+        TRAP_OMNI_MIN,
+        TRAP_OMNI_MAX,
+        TRAP_OMNI_SUM,
+        TRAP_OMNI_MIN_TIEBREAK_SUM,
+        TRAP_OMNI_MIN_TIEBREAK_MAX,
     }
 
 
@@ -38,6 +44,12 @@ public class BenchmarkGame
             CopStrategy.STMTAStar => new PrecalculatedAStarWithAssignedTargets(Game),
             CopStrategy.TRAP_Max => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game)),
             CopStrategy.TRAP_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Sum, Game)),
+            CopStrategy.TRAP_Max_Tiebreak_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max_Tiebreak_Sum, Game)),
+            CopStrategy.TRAP_OMNI_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Max),
+            CopStrategy.TRAP_OMNI_MIN => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min),
+            CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),
+            CopStrategy.TRAP_OMNI_MIN_TIEBREAK_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min_Tiebreak_Sum),
+            CopStrategy.TRAP_OMNI_MIN_TIEBREAK_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min_Tiebreak_Max),
             _ => null
         };
         Game.strategies[Game.Robbers] = new MultiagentTrailmax(Game);
@@ -66,9 +78,33 @@ public class BenchmarkGame
         public int caughtAmount;
         public int[] copStartPositions;
         public int[] robberStartPositions;
+
+        public Result(int turns, int caughtAmount, int[] copStartPositions, int[] robberStartPositions)
+        {
+            this.turns = turns;
+            this.caughtAmount = caughtAmount;
+            this.copStartPositions = copStartPositions;
+            this.robberStartPositions = robberStartPositions;
+        }
+
         public override readonly string ToString()
         {
-            return $"{turns}, {caughtAmount}, C:[{string.Join(",", copStartPositions)}], R:[{string.Join(",", robberStartPositions)}]";
+            return $"{turns}, {caughtAmount}, C:[{string.Join(";", copStartPositions)}], R:[{string.Join(";", robberStartPositions)}]";
+        }
+        public static Result Parse(string data)
+        {
+            var cells = data.Split(",").Select(str => str.Trim().Replace(" ", "")).ToArray();
+            if (cells.Length != 4) throw new FormatException($"Could not parse \"{data}\"");
+            var turnsCell = cells[0];
+            var caughtCell = cells[1];
+            var copPositionsCell = cells[2];
+            var robberPositionsCell = cells[3];
+
+            var turns = int.Parse(turnsCell);
+            var caught = int.Parse(caughtCell);
+            var copPositions = copPositionsCell[3..^1].Split(';').Select(int.Parse).ToArray();
+            var robberPositions = robberPositionsCell[3..^1].Split(';').Select(int.Parse).ToArray();
+            return new(turns, caught, copPositions, robberPositions);
         }
     }
 }

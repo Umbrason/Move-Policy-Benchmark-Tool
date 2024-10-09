@@ -22,7 +22,7 @@ public class ManualModeInputHandler : MonoBehaviour, ManualModeInputs.IManualGam
         {
             Agent = agent;
             Fulfilled = null;
-            MoveOptions = Agent.OccupiedNode.Neighbours.Append(Agent.OccupiedNode).ToArray();
+            MoveOptions = Agent.OccupiedNode.Neighbours.Take(Agent.OccupiedNode.neighbourCount).Append(Agent.OccupiedNode).ToArray();
         }
 
         public event Action Fulfilled;

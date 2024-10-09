@@ -8,11 +8,28 @@ using UnityEngine;
 
 public class Graph
 {
-    public List<Node> Nodes;
+    public readonly Node[] Nodes;
+    private readonly bool[] pursuerExplored;
+    private readonly bool[] targetCover;
+    private readonly int[] targetQueueIndex;
+    private readonly int[] pursuerQueueIndex;
+    private readonly int[] targetQueueCost;
+    private readonly int[] pursuerQueueCost;
+    public string name;
 
-    public Graph(List<Node> nodes)
+    public Graph(Node[] nodes, string name, bool precalcAStar = true)
     {
         Nodes = nodes;
+
+        pursuerExplored = new bool[Nodes.Length];
+        targetCover = new bool[Nodes.Length];
+        targetQueueIndex = new int[Nodes.Length];
+        pursuerQueueIndex = new int[Nodes.Length];
+        targetQueueCost = new int[Nodes.Length];
+        pursuerQueueCost = new int[Nodes.Length];
+
+        this.name = name;
+        if (precalcAStar) PrecalcAStarPaths();
     }
 
     static readonly (int, int)[] Neighbourhood = new (int, int)[]
@@ -65,6 +82,7 @@ public class Graph
             {
                 var node = nodes[x, y];
                 if (node == null) continue;
+                int nbID = 0;
                 foreach (var nb in Neighbourhood)
                 {
                     var nbx = x + nb.Item1;
@@ -72,10 +90,11 @@ public class Graph
                     if (nbx < 0 || nbx >= width || nby < 0 || nby >= height) continue;
                     var nbNode = nodes[nbx, nby];
                     if (nbNode == null) continue;
-                    node.Neighbours.Add(nbNode);
+                    node.Neighbours[nbID++] = nbNode;
+                    node.neighbourCount = nbID;
                 }
             }
-        return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToList());
+        return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToArray(), textAsset.name);
     }
 
     public static Graph FromTexture(Texture2D texture)
@@ -98,6 +117,7 @@ public class Graph
             {
                 var node = nodes[x, y];
                 if (node == null) continue;
+                int nbID = 0;
                 foreach (var nb in Neighbourhood)
                 {
                     var nbx = x + nb.Item1;
@@ -105,104 +125,263 @@ public class Graph
                     if (nbx < 0 || nbx >= w || nby < 0 || nby >= h) continue;
                     var nbNode = nodes[nbx, nby];
                     if (nbNode == null) continue;
-                    node.Neighbours.Add(nbNode);
+                    node.Neighbours[nbID++] = nbNode;
+                    node.neighbourCount = nbID;
                 }
             }
-        return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToList());
+        return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToArray(), texture.name);
     }
 
-    private PrecalculatedAStarPaths _Paths;
-    private PrecalculatedAStarPaths Paths { get => _Paths ??= new(this); }
-    public List<Node> FromTo(Node start, Node end) => Paths.FromTo(start, end);
-    public void PrecalcAStarPaths() => _Paths ??= new(this);
-
-    public HashSet<Node> CalculateTargetCover(Node targetNode, List<Node> pursuerNodes)
+    public int CalculateTargetCoverSize(int targetNode, int[] pursuerNodes) => CalculateTargetCoverSize(new[] { targetNode }, pursuerNodes);
+    public int CalculateTargetCoverSize(int[] targetNodes, int[] pursuerNodes, int targetSpeed = 1, int pursuerSpeed = 1)
     {
-        var cover = new HashSet<Node>();
-        foreach (var node in Nodes)
-        {
-            var targetDistance = FromTo(targetNode, node).Count;
-            var bestCopDistance = pursuerNodes.Min(n => FromTo(n, node).Count);
-            if (targetDistance < bestCopDistance) cover.Add(node);
-        }
-        return cover;
-    }
+        int targetCoverCount = 0;
 
-    public class PrecalculatedAStarPaths
-    {
-        internal Dictionary<Node, Dictionary<Node, List<Node>>> cache = new();
-        internal PrecalculatedAStarPaths() { }
-        public PrecalculatedAStarPaths(Graph graph)
+        int targetQueueTail = 0;
+        int targetQueueHead = 0;
+
+        int pursuerQueueTail = 0;
+        int pursuerQueueHead = 0;
+
+        for (int i = 0; i < Nodes.Length; i++)
         {
-            Precalculate(graph);
+            pursuerExplored[i] = false;
+            targetCover[i] = false;
+            targetQueueCost[i] = int.MaxValue;
+            targetQueueIndex[i] = -1;
+            pursuerQueueCost[i] = int.MaxValue;
+            pursuerQueueIndex[i] = -1;
         }
-        public void Precalculate(Graph graph)
+
+        for (int i = 0; i < targetNodes.Length; i++)
         {
-            var threads = new List<Thread>();
-            foreach (var from in graph.Nodes)
-            {
-                cache[from] = new();
-                var thread = new Thread(() =>
+            int target = targetNodes[i];
+            if (targetCover[target]) continue;
+            targetCoverCount++;
+            targetCover[target] = true;
+            targetQueueCost[targetQueueHead] = 0;
+            targetQueueIndex[targetQueueHead++] = target;
+        }
+
+        for (int i = 0; i < pursuerNodes.Length; i++)
+        {
+            int pursuer = pursuerNodes[i];
+            if (pursuerExplored[pursuer]) continue;
+            pursuerExplored[pursuer] = true;
+            pursuerQueueCost[pursuerQueueHead] = 0;
+            pursuerQueueIndex[pursuerQueueHead++] = pursuer;
+        }
+
+        while (targetQueueIndex[targetQueueTail] >= 0)
+        {
+            var minCostTarget = targetQueueCost[targetQueueTail];
+            var minCostPursuers = pursuerQueueCost[pursuerQueueTail];            
+            if (minCostTarget < minCostPursuers)
+            {            
+                var nodeIndex = targetQueueIndex[targetQueueTail++];
+                for (int i = 0; i < Nodes[nodeIndex].neighbourCount; i++)
                 {
-                    SortedList<float, Node> ExploreQueue = new(new DuplicateKeyComparer<float>()) { { 0, from } };
-                    Dictionary<Node, Node> predecessors = new() { { from, from } };
-
-                    Dictionary<Node, float> Costs = new();
-                    foreach (var node in graph.Nodes) Costs[node] = float.PositiveInfinity;
-                    Costs[from] = 0;
-
-                    while (ExploreQueue.Count > 0)
-                    {
-                        var current = ExploreQueue.Values[0];
-                        ExploreQueue.RemoveAt(0);
-                        foreach (var neighbour in current.Neighbours)
-                        {
-                            var nbCost = Costs[current] + current.Distance(neighbour);
-                            if (nbCost >= Costs[neighbour]) continue;
-                            predecessors[neighbour] = current;
-                            Costs[neighbour] = nbCost;
-                            if (!ExploreQueue.ContainsValue(neighbour)) ExploreQueue.Add(nbCost, neighbour);
-                        }
-                    }
-                    foreach (var to in graph.Nodes) cache[from][to] = Reconstruct(predecessors, to);
-                });
-                threads.Add(thread);
-                thread.Start();
+                    var nb = Nodes[nodeIndex].Neighbours[i];
+                    if (targetCover[nb.index] || pursuerExplored[nb.index]) continue;
+                    targetCover[nb.index] = true;
+                    targetCoverCount++;
+                    targetQueueIndex[targetQueueHead] = nb.index;
+                    targetQueueCost[targetQueueHead++] = minCostTarget + pursuerSpeed;
+                }
             }
-            foreach (var thread in threads)
-                thread.Join();
+            else
+            {        
+                var nodeIndex = pursuerQueueIndex[pursuerQueueTail++];
+                for (int i = 0; i < Nodes[nodeIndex].neighbourCount; i++)
+                {
+                    var nb = Nodes[nodeIndex].Neighbours[i];
+                    if (pursuerExplored[nb.index]) continue;
+                    pursuerExplored[nb.index] = true;
+                    pursuerQueueIndex[pursuerQueueHead] = nb.index;
+                    pursuerQueueCost[pursuerQueueHead++] = minCostPursuers + targetSpeed;
+                }             
+            }
+        }
+        return targetCoverCount;
+    }
+    public int[] CalculateTargetCover(int[] targetNodes, int[] pursuerNodes, int targetSpeed = 1, int pursuerSpeed = 1)
+    {
+        int targetCoverCount = 0;
+
+        int targetQueueTail = 0;
+        int targetQueueHead = 0;
+
+        int pursuerQueueTail = 0;
+        int pursuerQueueHead = 0;
+
+        for (int i = 0; i < Nodes.Length; i++)
+        {
+            pursuerExplored[i] = false;
+            targetCover[i] = false;
+            targetQueueCost[i] = int.MaxValue;
+            targetQueueIndex[i] = -1;
+            pursuerQueueCost[i] = int.MaxValue;
+            pursuerQueueIndex[i] = -1;
         }
 
-        private static List<Node> Reconstruct(Dictionary<Node, Node> predecessors, Node node)
+
+        for (int i = 0; i < targetNodes.Length; i++)
         {
-            var path = new List<Node>();
-            while (predecessors[node] != node)
+            int target = targetNodes[i];
+            if (targetCover[target]) continue;
+            targetCoverCount++;
+            targetCover[target] = true;
+            targetQueueCost[targetQueueHead] = 0;
+            targetQueueIndex[targetQueueHead++] = target;
+        }
+
+        for (int i = 0; i < pursuerNodes.Length; i++)
+        {
+            int pursuer = pursuerNodes[i];
+            pursuerExplored[pursuer] = true;
+            pursuerQueueCost[pursuerQueueHead] = 0;
+            pursuerQueueIndex[pursuerQueueHead++] = pursuer;
+        }
+
+        while (targetQueueIndex[targetQueueTail] >= 0)
+        {
+            var minCostTarget = targetQueueCost[targetQueueTail];
+            var minCostPursuers = pursuerQueueCost[pursuerQueueTail];
+            if (minCostTarget < minCostPursuers)
             {
-                path.Insert(0, node);
-                node = predecessors[node];
-            };
-            return path;
+                var nodeIndex = targetQueueIndex[targetQueueTail++];
+                for (int i = 0; i < Nodes[nodeIndex].neighbourCount; i++)
+                {
+                    var nb = Nodes[nodeIndex].Neighbours[i];
+                    if (targetCover[nb.index] || pursuerExplored[nb.index]) continue;
+                    targetCover[nb.index] = true;
+                    targetCoverCount++;
+                    targetQueueIndex[targetQueueHead] = nb.index;
+                    targetQueueCost[targetQueueHead++] = minCostTarget + pursuerSpeed;
+                }
+            }
+            else
+            {
+                var nodeIndex = pursuerQueueIndex[pursuerQueueTail++];
+                for (int i = 0; i < Nodes[nodeIndex].neighbourCount; i++)
+                {
+                    var nb = Nodes[nodeIndex].Neighbours[i];
+                    if (pursuerExplored[nb.index]) continue;
+                    pursuerExplored[nb.index] = true;
+                    pursuerQueueIndex[pursuerQueueHead] = nb.index;
+                    pursuerQueueCost[pursuerQueueHead++] = minCostPursuers + targetSpeed;
+                }
+            }
         }
+        var targetCoverArray = new int[targetCoverCount];
+        int j = 0;
+        for (int i = 0; i < Nodes.Length; i++)
+            if (targetCover[i])
+            {
+                targetCoverArray[j] = i;
+                j++;
+            }
+        return targetCoverArray;
+    }
 
-        public List<Node> FromTo(Node start, Node end)
+    readonly struct CoverExplorationNode
+    {
+        public readonly int cost;
+        public readonly int index;
+
+        public CoverExplorationNode(int cost, int index)
         {
-            return cache[start][end];
+            this.cost = cost;
+            this.index = index;
         }
     }
 
+
+    //TODO let this be an Indx->Indx dict instead. also make the path an array not list
+    internal int[,] pathCache;
+    internal int[,] distanceCache;
+
+    public void PrecalcAStarPaths()
+    {
+        pathCache = new int[Nodes.Length, Nodes.Length];
+        distanceCache = new int[Nodes.Length, Nodes.Length];
+        int[] predecessors = new int[Nodes.Length];
+        int[] Costs = new int[Nodes.Length];
+        SortedList<int, int> ExploreQueue = new(new DuplicateIntKeyComparer());
+        for (int from = 0; from < Nodes.Length; from++)
+        {
+            for (int i = 0; i < Nodes.Length; i++)
+            {
+                Costs[i] = int.MaxValue;
+                predecessors[i] = -1;
+            }
+            Costs[from] = 0;
+            predecessors[from] = from;
+            ExploreQueue.Add(0, from);
+
+            while (ExploreQueue.Count > 0)
+            {
+                var current = ExploreQueue.Values[0];
+                ExploreQueue.RemoveAt(0);
+                var currentNode = Nodes[current];
+                for (int i = 0; i < currentNode.neighbourCount; i++)
+                {
+                    Node neighbour = currentNode.Neighbours[i];
+                    var nbCost = Costs[current] + 1;
+                    if (nbCost >= Costs[neighbour.index]) continue;
+                    predecessors[neighbour.index] = current;
+                    Costs[neighbour.index] = nbCost;
+                    if (!ExploreQueue.ContainsValue(neighbour.index)) ExploreQueue.Add(nbCost, neighbour.index);
+                }
+            }
+            for (int to = 0; to < Nodes.Length; to++)
+            {
+                distanceCache[from, to] = Costs[to];
+                pathCache[from, to] = predecessors[to];
+            }
+            ExploreQueue.Clear();
+        }
+    }
+
+    private int[] Reconstruct(int from, int to)
+    {
+        if (distanceCache[from, to] == int.MaxValue) return null;
+        var path = new int[distanceCache[from, to]];
+        for (int i = path.Length - 1; i >= 0; i--)
+        {
+            path[i] = to;
+            to = pathCache[from, to];
+        }
+        return path;
+    }
+
+    public int Distance(Node from, Node to) => Distance(from.index, to.index);
+    public int Distance(int from, int to) => distanceCache[from, to];
+
+    public int[] FromTo(int start, int end) => Reconstruct(start, end);
+    public int[] FromTo(Node start, Node end) => FromTo(start.index, end.index);
+
+    public Node[] FromToNodes(Node start, Node end)
+    {
+        return FromTo(start, end).Select(indx => Nodes[indx]).ToArray();
+    }
+
+
+    //TODO remove graph copying alltogether. use one readonly graph and only the agents know what node they are on
     public Graph DeepCopy()
     {
-        var newNodes = Nodes.Select(node => new Node(node.position, node.index)).ToList();
-        for (int i = 0; i < Nodes.Count; i++)
-            newNodes[i].Neighbours.AddRange(Nodes[i].Neighbours.Select(nb => newNodes[nb.index]));
-        var copy = new Graph(newNodes);
-        copy._Paths = new() { cache = new() };
-        foreach (var (startNode, DestinationPaths) in _Paths.cache)
+        var newNodes = Nodes.Select(node => new Node(node.position, node.index)).ToArray();
+        for (int i = 0; i < Nodes.Length; i++)
         {
-            var PathsByDestination = new Dictionary<Node, List<Node>>();
-            foreach (var (destination, path) in DestinationPaths) PathsByDestination[copy.Nodes[destination.index]] = path.Select(node => copy.Nodes[node.index]).ToList();
-            copy._Paths.cache[copy.Nodes[startNode.index]] = PathsByDestination;
+            newNodes[i].neighbourCount = Nodes[i].neighbourCount;
+            for (int j = 0; j < 8; j++)
+                newNodes[i].Neighbours[j] = Nodes[i].Neighbours[j];
         }
+        var copy = new Graph(newNodes, name, false)
+        {
+            pathCache = pathCache,
+            distanceCache = distanceCache
+        };
         return copy;
     }
 }

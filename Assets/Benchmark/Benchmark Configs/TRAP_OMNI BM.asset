@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e583e1a183e79814ca0359aed53066ad, type: 3}
+  m_Name: TRAP_OMNI BM
+  m_EditorClassIdentifier: 
+  Maps:
+  - enabled: 1
+    mapFile: {fileID: 4900000, guid: 5f5af98875ef2cb438ca0a65d6656a39, type: 3}
+    timeout: 400
+  - enabled: 0
+    mapFile: {fileID: 4900000, guid: 8acc95b680b3d824886cc80faf6c087a, type: 3}
+    timeout: 300
+  - enabled: 0
+    mapFile: {fileID: 4900000, guid: 1764ed1ebd4dc7e4a8107acad82902b2, type: 3}
+    timeout: 300
+  - enabled: 0
+    mapFile: {fileID: 4900000, guid: 363d5d005ef7ae044925522711fcaf75, type: 3}
+    timeout: 300
+  - enabled: 0
+    mapFile: {fileID: 4900000, guid: 08eb2ce1cb666014c857e1c18bc5902d, type: 3}
+    timeout: 300
+  TeamSpeeds:
+  - enabled: 1
+    CopSpeed: 1
+    RobberSpeed: 1
+  TeamSizes:
+  - enabled: 0
+    CopCount: 3
+    RobberCount: 3
+  - enabled: 0
+    CopCount: 6
+    RobberCount: 3
+  - enabled: 1
+    CopCount: 3
+    RobberCount: 6
+  Strategies:
+  - enabled: 1
+    Strategy: 4
+  - enabled: 0
+    Strategy: 5
+  - enabled: 0
+    Strategy: 6
+  - enabled: 1
+    Strategy: 2
+  - enabled: 0
+    Strategy: 1
+  - enabled: 0
+    Strategy: 3

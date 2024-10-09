@@ -13,4 +13,14 @@ public class Robber : Agent
         base.Reset();
         Caught = false;
     }
+    protected override void OnEnterNode(Node node)
+    {
+        base.OnEnterNode(node);
+        foreach (var occupant in node.Occupants)
+            if (occupant is Cop cop)
+            {
+                Catch(cop);
+                break;
+            }
+    }
 }

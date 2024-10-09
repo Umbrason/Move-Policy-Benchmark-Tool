@@ -215,7 +215,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1956643016
+--- !u!1 &2117708599
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -223,22 +223,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1956643017}
-  - component: {fileID: 1956643018}
+  - component: {fileID: 2117708600}
+  - component: {fileID: 2117708601}
   m_Layer: 0
-  m_Name: Benchmark Runner
+  m_Name: Analyzer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1956643017
+--- !u!4 &2117708600
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1956643016}
+  m_GameObject: {fileID: 2117708599}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -247,42 +247,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1956643018
+--- !u!114 &2117708601
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1956643016}
+  m_GameObject: {fileID: 2117708599}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fa003ab8379eec488f8737692a9a988, type: 3}
+  m_Script: {fileID: 11500000, guid: 19a1f545804343b428604e5e093db014, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OutputDirectory: Q:\.UnityProjects\Move-Policy-Benchmark-Tool\Benchmarks
-  benchmarkRunsPerCombination: 500
-  Configs:
-  - Map: {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
-    CopCount: 3
-    RobberCount: 3
-    CopSpeed: 1
-    RobberSpeed: 1
-    Strategy: 0
-  - Map: {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
-    CopCount: 3
-    RobberCount: 3
-    CopSpeed: 1
-    RobberSpeed: 1
-    Strategy: 1
-  - Map: {fileID: 2800000, guid: 147ef2f38ab95b442b782acb39e62f09, type: 3}
-    CopCount: 3
-    RobberCount: 3
-    CopSpeed: 1
-    RobberSpeed: 1
-    Strategy: 2
+  defaultPath: Q:\.UnityProjects\Move-Policy-Benchmark-Tool\Benchmarks
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1071254296}
-  - {fileID: 1956643017}
+  - {fileID: 2117708600}

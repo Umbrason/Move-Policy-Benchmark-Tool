@@ -6,24 +6,46 @@ using UnityEngine;
 
 public class UnityGame : MonoBehaviour
 {
-    public Texture2D MapAsset;
+    public TextAsset MapAsset;
     public CopsNRobberGame Game { get; private set; }
     public event Action GameStart;
     public event Action GameTick;
     public event Action GameStop;
 
-    public int RobberCount;
-    public int CopCount;
+    public int copSpeed = 1;
+    public int robberSpeed = 1;
+    public int[] CopNodes;
+    public int[] RobberNodes;
+    public bool randomizePositions;
+
+    [SerializeField] BenchmarkGame.CopStrategy copStrategy;
 
     void Start()
     {
-        var graph = Graph.FromTexture(MapAsset);
-        Game = new CopsNRobberGame(graph, CopCount, RobberCount);
-        Game.CopStrategy = new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game));
+        var graph = Graph.FromMapFile(MapAsset);
+        var spawnpoints = new Dictionary<Team, int[]>();
+        Game = new CopsNRobberGame(graph, CopNodes.Length, RobberNodes.Length, randomizePositions ? new RandomSpawnpointProvider() : new ArraySpawnpointProvider(spawnpoints));
+        spawnpoints[Game.Cops] = CopNodes;
+        spawnpoints[Game.Robbers] = RobberNodes;
+        Game.teamSpeed[Game.Cops] = copSpeed;
+        Game.teamSpeed[Game.Robbers] = robberSpeed;
+        Game.CopStrategy = copStrategy switch
+        {
+            BenchmarkGame.CopStrategy.STMTAStar => new PrecalculatedAStarWithAssignedTargets(Game),
+            BenchmarkGame.CopStrategy.TRAP_Max => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game)),
+            BenchmarkGame.CopStrategy.TRAP_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Sum, Game)),
+            BenchmarkGame.CopStrategy.TRAP_Max_Tiebreak_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max_Tiebreak_Sum, Game)),
+            BenchmarkGame.CopStrategy.TRAP_OMNI_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Max),
+            BenchmarkGame.CopStrategy.TRAP_OMNI_MIN => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min),
+            BenchmarkGame.CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),
+            BenchmarkGame.CopStrategy.TRAP_OMNI_MIN_TIEBREAK_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min_Tiebreak_Sum),
+            BenchmarkGame.CopStrategy.TRAP_OMNI_MIN_TIEBREAK_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min_Tiebreak_Max),
+            _ => null
+        };
         Game.RobberStrategy = new MultiagentTrailmax(Game);
         StartCoroutine(GameRoutine());
     }
-
+    [SerializeField] bool autoPlay = true;
     public IEnumerator GameRoutine()
     {
         while (true)
@@ -36,7 +58,8 @@ public class UnityGame : MonoBehaviour
                 Game.TickStrategies();
                 yield return new WaitUntil(() => !ManualModeInputHandler.HasPendingSelection);
                 GameTick?.Invoke();
-                yield return new WaitForSeconds(.1f);
+                if(autoPlay) yield return new WaitForSeconds(.1f);
+                else yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
             }
             GameStop?.Invoke();
             yield return new WaitForSeconds(1f);
