@@ -28,8 +28,8 @@ public class Graph
         if (precalcAStar) PrecalcAStarPaths();
     }
 
-    static readonly (int, int)[] Neighbourhood =
-    [
+    static readonly (int, int)[] Neighbourhood = new[]
+    {
             //N4
             (-1, 0),
             ( 1, 0),
@@ -40,12 +40,12 @@ public class Graph
             (-1, 1),
             ( 1,-1),
             ( 1, 1),
-    ];
+    };
 
-    public static Graph FromMapFile(string textAsset)
+    public static Graph FromMapFile(TextAsset textAsset)
     {
-        var mapName = Path.GetFileNameWithoutExtension(textAsset);
-        var textReader = new StringReader(File.ReadAllText(textAsset));
+        var mapName = textAsset.name;
+        var textReader = new StringReader(textAsset.text);
         var typeLine = textReader.ReadLine();
         var heightLine = textReader.ReadLine();
         var widthLine = textReader.ReadLine();
@@ -127,7 +127,6 @@ public class Graph
                 }
             }
         return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToArray(), texture.name);
-        return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToArray(), mapName);
     }
 
     public int CalculateTargetCoverSize(int targetNode, int[] pursuerNodes) => CalculateTargetCoverSizes(new[] { targetNode }, pursuerNodes)[0];
