@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+
 public class BenchmarkGame
 {    
     public readonly int turnLimit;

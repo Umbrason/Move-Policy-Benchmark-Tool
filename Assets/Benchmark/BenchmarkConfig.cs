@@ -1,4 +1,7 @@
-public class BenchmarkConfig
+using UnityEngine;
+
+[CreateAssetMenu]
+public class BenchmarkConfig : ScriptableObject
 {
     public MapConfig[] Maps;
     public TeamSpeedConfig[] TeamSpeeds;
@@ -50,7 +53,7 @@ public class BenchmarkConfig
     [System.Serializable]
     public class MapConfig
     {
-        public string mapFile;
+        public TextAsset mapFile;
         public int timeout;
     }
 

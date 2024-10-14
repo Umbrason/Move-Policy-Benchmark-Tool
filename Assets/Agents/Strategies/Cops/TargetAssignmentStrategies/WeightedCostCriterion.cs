@@ -1,4 +1,8 @@
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 public class WeightedCostCriterion : ITargetAssignmentStrategy
 {
     public Dictionary<Cop, Robber> AssignAll(CopsNRobberGame game)

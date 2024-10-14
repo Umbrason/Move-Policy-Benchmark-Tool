@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 public class PrecalculatedAStarWithAssignedTargets : ITeamStrategy
 {
     private Dictionary<Cop, Robber> targetAssignment = new();
