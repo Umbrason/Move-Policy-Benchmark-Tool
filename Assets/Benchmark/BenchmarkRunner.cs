@@ -9,7 +9,6 @@ using UnityEngine;
 
 public class BenchmarkRunner : MonoBehaviour
 {
-    public string OutputDirectory;
     public int benchmarkRunsPerCombination = 100;
     [SerializeField] private List<BenchmarkConfig> Configs = new();
 
@@ -46,7 +45,7 @@ public class BenchmarkRunner : MonoBehaviour
     void RunBenchmark()
     {
         startTime = DateTime.Now;
-        int threads = Mathf.CeilToInt(Environment.ProcessorCount / 1.5f);
+        int threads = 6; //Mathf.CeilToInt(Environment.ProcessorCount - 2);
 
         foreach (var benchmarkConfig in Configs)
             foreach (var gameConfig in benchmarkConfig.GameConfigs)
@@ -66,18 +65,26 @@ public class BenchmarkRunner : MonoBehaviour
         }
     }
 
+    int progress;
 
     private void RunQueuedBenchmarks()
     {
         var graphCopies = new Dictionary<Graph, Graph>();
+        var results = new Queue<(BenchmarkConfig.GameConfig config, BenchmarkGame.Result result)>();
         foreach (var gameConfig in openBenchmarks.Keys)
             while (openBenchmarks[gameConfig].TryDequeue(out var template))
             {
                 if (!graphCopies.TryGetValue(template.graph, out var graphCopy)) graphCopy = template.graph.DeepCopy();
                 graphCopies[template.graph] = graphCopy;
                 template = new(graphCopies[template.graph], gameConfig, template.seed);
-                finishedBenchmarks[gameConfig].Add(RunSingleBenchmarkGame(template));
+                results.Enqueue((gameConfig, RunSingleBenchmarkGame(template)));
+                Interlocked.Increment(ref progress);
             }
+        while (results.Count > 0)
+        {
+            var result = results.Dequeue();
+            finishedBenchmarks[result.config].Add(result.result);
+        }
     }
 
     private BenchmarkGame.Result RunSingleBenchmarkGame(BenchmarkRunTemplate template)
@@ -92,7 +99,7 @@ public class BenchmarkRunner : MonoBehaviour
 
     void OnGUI()
     {
-        var finished = finishedBenchmarks.Select(a => a.Value.Count).Sum();
+        var finished = progress;
         var total = totalBenchmarks;
         var percent = finished / (float)total;
         GUI.Label(new(15, 15, 1000, 30), $"Running {benchmarkWorkerThreads.Count(thread => thread.IsAlive)} Threads");
@@ -121,7 +128,10 @@ public class BenchmarkRunner : MonoBehaviour
             StringBuilder builder = new();
             foreach (var result in finishedBenchmarks[config])
                 builder.AppendLine(result.ToString());
-            var fileName = $"{OutputDirectory}\\{DateTime.Now:MM-dd-yy HH։mm}\\{config.OriginalMap.name}\\{config.copCount}-Cops_vs_{config.robberCount}-Robbers_{config.copSpeed}։{config.robberSpeed}-speed_{config.copStrategy}.csv";
+            var OutputDirectories = new string[0];
+            while (OutputDirectories.Length == 0)
+                OutputDirectories = SFB.StandaloneFileBrowser.OpenFolderPanel("Output Directory...", Application.dataPath, false);
+            var fileName = $"{OutputDirectories[0]}\\{DateTime.Now:MM-dd-yy HH։mm}\\{config.OriginalMap.name}\\{config.copCount}-Cops_vs_{config.robberCount}-Robbers_{config.copSpeed}։{config.robberSpeed}-speed_{config.copStrategy}.csv";
             var dirName = Path.GetDirectoryName(fileName);
             string partialDirName = "";
             foreach (var subfolder in dirName.Split(Path.DirectorySeparatorChar).Skip(1))

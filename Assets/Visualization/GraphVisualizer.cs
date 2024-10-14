@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Android.Types;
 using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -30,6 +31,7 @@ public class GraphVisualizer : MonoBehaviour
     private void SetGraph(Graph graph)
     {
         if (m_graph == graph) return;
+        m_graph = graph;
 
         var positions = graph.Nodes.Select(n => n.position).ToArray();
         var min = new Vector2Int(positions.Min(p => p.x), positions.Min(p => p.y));
@@ -61,6 +63,19 @@ public class GraphVisualizer : MonoBehaviour
             graphTexture.SetPixel(local.x, local.y, Color.white);
         }
         graphTexture.Apply();
+    }
+
+    void OnGUI()
+    {
+        var world = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        var tile = Vector2Int.RoundToInt(world._xz());
+        var index = -1;
+        for (int i = 0; i < Graph.Nodes.Length; i++)
+        {
+            if (Graph.Nodes[i].position == tile)
+                index = i;
+        }
+        GUI.Label(new(15, 15, 400, 40), $"{tile}: {index}");
     }
 
 }

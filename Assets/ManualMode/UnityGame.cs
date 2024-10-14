@@ -37,7 +37,7 @@ public class UnityGame : MonoBehaviour
             BenchmarkGame.CopStrategy.TRAP_Max_Tiebreak_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max_Tiebreak_Sum, Game)),
             BenchmarkGame.CopStrategy.TRAP_OMNI_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Max),
             BenchmarkGame.CopStrategy.TRAP_OMNI_MIN => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min),
-            BenchmarkGame.CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),            
+            BenchmarkGame.CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),
             _ => null
         };
         Game.RobberStrategy = new MultiagentTrailmax(Game);
@@ -51,13 +51,15 @@ public class UnityGame : MonoBehaviour
             Game.InitAgents();
             Game.InitStrategies();
             GameStart?.Invoke();
+            int turns = 0;
             while (Game.Robbers.Agents.Any(agent => !(agent as Robber).Caught))
             {
                 Game.TickStrategies();
                 yield return new WaitUntil(() => !ManualModeInputHandler.HasPendingSelection);
                 GameTick?.Invoke();
-                if(autoPlay) yield return new WaitForSeconds(.1f);
+                if (autoPlay) yield return new WaitForSeconds(.1f);
                 else yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
+                turns++;
             }
             GameStop?.Invoke();
             yield return new WaitForSeconds(1f);

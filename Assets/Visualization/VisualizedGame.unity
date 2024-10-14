@@ -509,11 +509,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MapAsset: {fileID: 4900000, guid: 5f5af98875ef2cb438ca0a65d6656a39, type: 3}
   copSpeed: 1
-  robberSpeed: 2
-  CopNodes: 1f0800008f07000026040000
-  RobberNodes: 8c0500001301000010070000
+  robberSpeed: 1
+  CopNodes: 000000000000000000000000
+  RobberNodes: 000000000000000000000000000000000000000000000000
   randomizePositions: 1
-  copStrategy: 0
+  copStrategy: 4
   autoPlay: 1
 --- !u!1 &762860759
 GameObject:
@@ -633,7 +633,7 @@ Transform:
   m_GameObject: {fileID: 920764316}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 40, y: 0, z: 45}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
