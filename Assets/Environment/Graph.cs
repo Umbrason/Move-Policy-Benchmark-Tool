@@ -28,8 +28,8 @@ public class Graph
         if (precalcAStar) PrecalcAStarPaths();
     }
 
-    static readonly (int, int)[] Neighbourhood = new (int, int)[]
-    {
+    static readonly (int, int)[] Neighbourhood =
+    [
             //N4
             (-1, 0),
             ( 1, 0),
@@ -40,11 +40,12 @@ public class Graph
             (-1, 1),
             ( 1,-1),
             ( 1, 1),
-    };
+    ];
 
-    public static Graph FromMapFile(TextAsset textAsset)
+    public static Graph FromMapFile(string textAsset)
     {
-        var textReader = new StringReader(textAsset.text);
+        var mapName = Path.GetFileNameWithoutExtension(textAsset);
+        var textReader = new StringReader(File.ReadAllText(textAsset));
         var typeLine = textReader.ReadLine();
         var heightLine = textReader.ReadLine();
         var widthLine = textReader.ReadLine();
@@ -126,16 +127,15 @@ public class Graph
                 }
             }
         return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToArray(), texture.name);
+        return new(nodeKeys.Select(key => nodes[key.Item1, key.Item2]).ToArray(), mapName);
     }
 
     public int CalculateTargetCoverSize(int targetNode, int[] pursuerNodes) => CalculateTargetCoverSizes(new[] { targetNode }, pursuerNodes)[0];
     public int[] CalculateTargetCoverSizes(int[] targetNodes, int[] pursuerNodes, int targetSpeed = 1, int pursuerSpeed = 1)
     {
-        UnityEngine.Profiling.Profiler.BeginSample("GCAlloc Arrays");
         var targetQueues = new FastNodeQueue[targetNodes.Length];
         var targetCovers = new bool[targetNodes.Length][];
         var targetCoverCounts = new int[targetNodes.Length];
-        UnityEngine.Profiling.Profiler.EndSample();
 
         while (targetCoverPool.Count <= targetNodes.Length) targetCoverPool.Add(new bool[Nodes.Length]);
         while (targetNodeQueuePool.Count <= targetNodes.Length) targetNodeQueuePool.Add(new(Nodes.Length));
@@ -383,8 +383,8 @@ public class Graph
         for (int i = 0; i < Nodes.Length; i++)
         {
             newNodes[i].neighbourCount = Nodes[i].neighbourCount;
-            for (int j = 0; j < 8; j++)
-                newNodes[i].Neighbours[j] = Nodes[i].Neighbours[j];
+            for (int j = 0; j < Nodes[i].neighbourCount; j++)
+                newNodes[i].Neighbours[j] = newNodes[Nodes[i].Neighbours[j].index];
         }
         var copy = new Graph(newNodes, name, false)
         {

@@ -9,8 +9,8 @@ using UnityEngine;
 
 public class BenchmarkRunner : MonoBehaviour
 {
-    public int benchmarkRunsPerCombination = 100;
     [SerializeField] private List<BenchmarkConfig> Configs = new();
+    public int benchmarkRunsPerCombination = 500;
 
 
     #region Runtime Data
@@ -42,10 +42,10 @@ public class BenchmarkRunner : MonoBehaviour
 
     void Start() => RunBenchmark();
     DateTime startTime;
-    void RunBenchmark()
+    public void RunBenchmark()
     {
         startTime = DateTime.Now;
-        int threads = 6; //Mathf.CeilToInt(Environment.ProcessorCount - 2);
+        int threads = Convert.ToInt32(Math.Ceiling(Environment.ProcessorCount * .75f));
 
         foreach (var benchmarkConfig in Configs)
             foreach (var gameConfig in benchmarkConfig.GameConfigs)

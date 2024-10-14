@@ -1,16 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 public class BenchmarkGame
-{
-    public readonly Graph graph;
-    public readonly List<Cop> cops;
-    public readonly List<Robber> robbers;
-    public readonly int copSpeed;
-    public readonly int robberSpeed;
+{    
     public readonly int turnLimit;
-    public readonly CopStrategy copStrategy;
     public Result result;
 
 
@@ -30,14 +20,14 @@ public class BenchmarkGame
 
     public BenchmarkGame(Graph graph, int[] copPositions, int[] robberPositions, int turnLimit = 100, int copSpeed = 1, int robberSpeed = 1, CopStrategy copStrategy = CopStrategy.STMTAStar)
     {
-        this.graph = graph;
         this.turnLimit = turnLimit;
-        this.copSpeed = copSpeed;
-        this.robberSpeed = robberSpeed;
         result.copStartPositions = copPositions;
         result.robberStartPositions = robberPositions;
+
         Game = new(graph, copPositions.Length, robberPositions.Length);
-        Game.strategies[Game.Cops] = copStrategy switch
+        Game.teamSpeed[Game.Robbers] = robberSpeed;
+        Game.teamSpeed[Game.Cops] = copSpeed;
+        Game.CopStrategy = copStrategy switch
         {
             CopStrategy.STMTAStar => new PrecalculatedAStarWithAssignedTargets(Game),
             CopStrategy.TRAP_Max => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max, Game)),
@@ -45,10 +35,10 @@ public class BenchmarkGame
             CopStrategy.TRAP_Max_Tiebreak_Sum => new AssignedTargetCoverGradientDescent(Game, new CoverMinimizeAssignment(CoverMinimizeAssignment.Metric.Max_Tiebreak_Sum, Game)),
             CopStrategy.TRAP_OMNI_MAX => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Max),
             CopStrategy.TRAP_OMNI_MIN => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Min),
-            CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),            
-            _ => null
+            CopStrategy.TRAP_OMNI_SUM => new CoverGradientDescent(Game, CoverGradientDescent.Metric.Sum),
+            _ => null!
         };
-        Game.strategies[Game.Robbers] = new MultiagentTrailmax(Game);
+        Game.RobberStrategy = new MultiagentTrailmax(Game);        
         Game.spawnpointProvider = new ArraySpawnpointProvider(new() {
             { Game.Cops, copPositions },
             { Game.Robbers, robberPositions }

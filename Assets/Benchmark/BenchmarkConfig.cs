@@ -1,31 +1,25 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
-
-[CreateAssetMenu(fileName = "New Benchmark", menuName = "Benchmark Config")]
-public class BenchmarkConfig : ScriptableObject
+public class BenchmarkConfig
 {
-    [SerializeField] MapConfig[] Maps;
-    [SerializeField] TeamSpeedConfig[] TeamSpeeds;
-    [SerializeField] TeamSizeConfig[] TeamSizes;
-    [SerializeField] CopStrategyConfig[] Strategies;
+    public MapConfig[] Maps;
+    public TeamSpeedConfig[] TeamSpeeds;
+    public TeamSizeConfig[] TeamSizes;
+    public BenchmarkGame.CopStrategy[] Strategies;
 
     public GameConfig[] GameConfigs => GenerateGameConfigs();
 
     private GameConfig[] GenerateGameConfigs()
     {
-        var configs = new GameConfig[Maps.Count(c => c.enabled) * TeamSizes.Count(c => c.enabled) * TeamSpeeds.Count(c => c.enabled) * Strategies.Count(c => c.enabled)];
+        var configs = new GameConfig[Maps.Length * TeamSizes.Length * TeamSpeeds.Length * Strategies.Length];
         int id = 0;
-        foreach (var map in Maps.Where(c => c.enabled))
+        foreach (var map in Maps)
         {
             var graph = Graph.FromMapFile(map.mapFile);
             graph.PrecalcAStarPaths();
-            foreach (var size in TeamSizes.Where(c => c.enabled))
-                foreach (var speed in TeamSpeeds.Where(c => c.enabled))
-                    foreach (var strategy in Strategies.Where(c => c.enabled))
+            foreach (var size in TeamSizes)
+                foreach (var speed in TeamSpeeds)
+                    foreach (var strategy in Strategies)
                     {
-                        configs[id++] = new(graph, size.RobberCount, size.CopCount, speed.CopSpeed, speed.RobberSpeed, strategy.Strategy, map.timeout);
+                        configs[id++] = new(graph, size.RobberCount, size.CopCount, speed.CopSpeed, speed.RobberSpeed, strategy, map.timeout);
                     }
         }
         return configs;
@@ -54,32 +48,23 @@ public class BenchmarkConfig : ScriptableObject
     }
 
     [System.Serializable]
-    private class MapConfig
+    public class MapConfig
     {
-        public bool enabled;
-        public TextAsset mapFile;
+        public string mapFile;
         public int timeout;
     }
 
     [System.Serializable]
-    private class TeamSpeedConfig
+    public class TeamSpeedConfig
     {
-        public bool enabled;
         public int CopSpeed;
         public int RobberSpeed;
     }
 
     [System.Serializable]
-    private class TeamSizeConfig
+    public class TeamSizeConfig
     {
-        public bool enabled;
         public int CopCount;
         public int RobberCount;
-    }
-    [System.Serializable]
-    private class CopStrategyConfig
-    {
-        public bool enabled;
-        public BenchmarkGame.CopStrategy Strategy;
     }
 }

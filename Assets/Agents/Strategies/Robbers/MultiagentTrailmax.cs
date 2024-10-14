@@ -56,13 +56,15 @@ public class MultiagentTrailmax : ITeamStrategy
     }
 
     public void Init() { }
-    
+
     private int[] GetRobberPath(Robber robber, Graph graph)
     {
         if (robber.Caught) return null;
         var graphSize = graph.Nodes.Length;
+        var robberEnqueued = new bool[graphSize];
         var robberClosed = new bool[graphSize];
         var robberClosedCount = 0;
+        var copsEnqueued = new bool[graphSize];
         var copsClosed = new bool[graphSize];
         var predecessors = new int[graphSize];
         for (int i = 0; i < predecessors.Length; i++) predecessors[i] = -1;
@@ -94,6 +96,8 @@ public class MultiagentTrailmax : ITeamStrategy
                     Node neighbour = node.Neighbours[i];
                     if (robberClosed[neighbour.index]) continue;
                     if (predecessors[neighbour.index] == -1) predecessors[neighbour.index] = index;
+                    if (robberEnqueued[neighbour.index]) continue;
+                    robberEnqueued[neighbour.index] = true;
                     robberQueue.Enqueue(minCostRobber + cached_CopSpeed, neighbour.index);
                 }
             }
@@ -110,7 +114,11 @@ public class MultiagentTrailmax : ITeamStrategy
                     if (robberCaughtStates == robberClosedCount) break;
                 }
                 for (int i = 0; i < node.neighbourCount; i++)
+                {
+                    if (copsEnqueued[node.Neighbours[i].index]) continue;
+                    copsEnqueued[node.Neighbours[i].index] = true;
                     copQueue.Enqueue(minCostCops + cached_RobberSpeed, node.Neighbours[i].index);
+                }
             }
         }
         return ReconstructPath(predecessors, lastCopClosed.index);
