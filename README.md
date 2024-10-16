@@ -4,8 +4,8 @@ Requires a free Unity 3D installation to configure benchmark scenarios.
 
 To just run the default configuration without installing Unity, a windows executable file can be found in the release section.
 
-The unity project also contains a visualization tool for individual scenario configurations in the "Visualization/VisualizedGame" Scene.
-This tool is not available as a standalone file.
+The Unity project also contains a visualization tool for individual scenario configurations in the "Visualization/VisualizedGame" Scene.
+This tool is sadly not available as a standalone file.
 
 Written for my CS Bachelors Thesis at RUB University.
 
